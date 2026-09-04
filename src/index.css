@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Asegurar que el contenedor del mapa tenga dimensiones válidas */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
