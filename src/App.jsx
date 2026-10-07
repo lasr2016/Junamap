@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
@@ -6,11 +6,8 @@ import {
   MapPin,
   CheckCircle,
   ShieldAlert,
-  Coffee,
-  ShoppingBag,
-  Utensils,
 } from "lucide-react";
-import localesData from "./data/locales.json";
+import { useGeoSearch } from "./hooks/useGeoSearch";
 
 // Solución para el bug de iconos de marcadores por defecto en Leaflet con Webpack/Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -56,22 +53,11 @@ export default function App() {
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [mapCenter, setMapCenter] = useState([-35.4264, -71.6554]); // Centro de Talca
   const [activeLocal, setActiveLocal] = useState(null);
-
-  // Filtrado de locales según la búsqueda y filtros seleccionados
-  const filteredLocales = useMemo(() => {
-    return localesData.filter((local) => {
-      const matchesSearch =
-        local.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        local.direccion.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesCategory =
-        selectedCategory === "Todos" || local.tipo === selectedCategory;
-
-      const matchesVerified = !onlyVerified || local.verificado === true;
-
-      return matchesSearch && matchesCategory && matchesVerified;
-    });
-  }, [searchTerm, selectedCategory, onlyVerified]);
+  const { locales: filteredLocales, loading, source } = useGeoSearch({
+    searchTerm,
+    selectedCategory,
+    onlyVerified,
+  });
 
   // Manejador para seleccionar un local desde la lista lateral
   const handleSelectLocal = (local) => {
@@ -91,7 +77,7 @@ export default function App() {
         </div>
         <div className="flex items-center gap-1 bg-emerald-700 px-2 py-1 rounded text-xs">
           <CheckCircle className="w-4 h-4 text-emerald-300" />
-          <span>Datos Simulados v1.0</span>
+          <span>{source === "api" ? "API geoespacial" : "Datos locales"}</span>
         </div>
       </header>
 
@@ -147,10 +133,14 @@ export default function App() {
           {/* Listado de resultados */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             <div className="flex justify-between items-center text-xs text-gray-500 font-medium mb-1">
-              <span>Locales encontrados: {filteredLocales.length}</span>
+              <span>
+                {loading
+                  ? "Buscando locales..."
+                  : `Locales encontrados: ${filteredLocales.length}`}
+              </span>
             </div>
 
-            {filteredLocales.length === 0 ? (
+            {!loading && filteredLocales.length === 0 ? (
               <div className="text-center py-8 text-gray-400 text-sm">
                 No se encontraron locales con los criterios actuales.
               </div>

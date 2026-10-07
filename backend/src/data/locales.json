@@ -1,0 +1,57 @@
+[
+  {
+    "id": "loc-01",
+    "nombre": "Casino Al Paso San Miguel",
+    "tipo": "Almuerzo",
+    "direccion": "Av. San Miguel 3400, Talca (Frente a UCM)",
+    "lat": -35.4338,
+    "lng": -71.6195,
+    "verificado": true,
+    "metodo_cobro": "Edenred POS",
+    "descripcion": "Menús diarios para estudiantes, colaciones caseras."
+  },
+  {
+    "id": "loc-02",
+    "nombre": "Minimarket El Estudiante",
+    "tipo": "Minimarket",
+    "direccion": "Avenida Lircay 2100, Talca (Cerca de UTalca)",
+    "lat": -35.4055,
+    "lng": -71.6441,
+    "verificado": true,
+    "metodo_cobro": "Edenred App / QR",
+    "descripcion": "Lácteos, snacks, bebidas y abarrotes con cobro rápido."
+  },
+  {
+    "id": "loc-03",
+    "nombre": "Cafetería Punto de Encuentro",
+    "tipo": "Colación",
+    "direccion": "Sector Centro - 2 Sur 840, Talca",
+    "lat": -35.4272,
+    "lng": -71.6668,
+    "verificado": false,
+    "metodo_cobro": "Solo Edenred POS",
+    "descripcion": "Cafetería de especialidad, sándwiches y jugos naturales."
+  },
+  {
+    "id": "loc-04",
+    "nombre": "Rincón Universitario",
+    "tipo": "Almuerzo",
+    "direccion": "30 Oriente 1420, Talca (Cerca de Campus San Miguel)",
+    "lat": -35.4315,
+    "lng": -71.6235,
+    "verificado": true,
+    "metodo_cobro": "Edenred POS / App",
+    "descripcion": "Comida rápida, papas fritas y colaciones estudiantiles."
+  },
+  {
+    "id": "loc-05",
+    "nombre": "Frutos del Maule Express",
+    "tipo": "Colación",
+    "direccion": "Av. Lircay 2350, Talca",
+    "lat": -35.4042,
+    "lng": -71.6415,
+    "verificado": false,
+    "metodo_cobro": "Edenred App",
+    "descripcion": "Ensaladas preparadas, frutas y opciones saludables."
+  }
+]

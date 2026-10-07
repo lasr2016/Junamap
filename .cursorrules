@@ -1,0 +1,9 @@
+# Reglas y Arquitectura de JunaMap
+
+- Stack Frontend: React con Vite/Next.js y MapLibre GL / Leaflet para el renderizado cartográfico.
+- Stack Backend: API REST / backend de búsqueda geográfica y endpoints geoespaciales.
+- Manejo de mapas:
+  - Mantener instancias de mapa y capas dentro de hooks limpios (ej. `useMap`, `useGeoSearch`).
+  - Evitar re-renders innecesarios en componentes que contienen el contenedor `<div id="map" />`.
+  - GeoJSON: validar estructuras `FeatureCollection` y coordenadas en formato `[longitud, latitud]`.
+- Estilo: código modular, tipado estricto si se usa TypeScript, componentes desacoplados de la lógica de búsqueda.
