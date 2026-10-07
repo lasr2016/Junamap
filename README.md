@@ -32,6 +32,8 @@ Sigue estos 4 pasos exactos en tu terminal para clonar el repositorio, configura
 Dado que JunaMap está pensado para usarse en terreno, puedes visualizar y probar la interfaz responsiva directamente en tu teléfono móvil siguiendo estos pasos:
 Asegúrate de que tu computadora y tu celular estén conectados a la misma red Wi-Fi.
 Levanta el servidor en tu terminal exponiéndolo a la red local con el comando:
+
 **npm run dev -- --host**
+
 La consola te mostrará una dirección bajo la etiqueta Network **(ejemplo: http://192.168.1.35:5173).**
 Escribe esa dirección exacta en el navegador web de tu celular
