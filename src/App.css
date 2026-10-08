@@ -95,7 +95,7 @@ body,
   pointer-events: none;
 }
 
-.top > * {
+.top>* {
   pointer-events: auto;
 }
 
@@ -262,6 +262,7 @@ body,
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -390,10 +391,12 @@ body,
     transform: scale(0.6);
     opacity: 0.4;
   }
+
   70% {
     transform: scale(1.1);
     opacity: 0;
   }
+
   100% {
     transform: scale(0.6);
     opacity: 0;
@@ -401,6 +404,7 @@ body,
 }
 
 .grab {
+  position: relative;
   padding: 10px 16px 6px;
   touch-action: none;
   cursor: grab;
@@ -432,11 +436,84 @@ body,
   color: var(--muted);
 }
 
+.grab-instruction {
+  margin: 0;
+  text-align: center;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: -0.01em;
+  padding: 0 4px;
+  line-height: 1.35;
+}
+
 .body {
   overflow-y: auto;
-  padding: 4px 16px 16px;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 16px calc(36px + env(safe-area-inset-bottom, 0px));
   flex: 1;
   overscroll-behavior: contain;
+}
+
+/* 3 Filas de Botones Marcables de Productos */
+.products-selection-section {
+  padding: 6px 0 14px;
+  animation: fadeIn 0.2s ease;
+}
+
+.products-grid-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.products-row-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 4px 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.products-row-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.product-pill-btn {
+  appearance: none;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 9999px;
+  padding: 7px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex: none;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.product-pill-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  transform: translateY(-1px);
+}
+
+.product-pill-btn:active {
+  transform: scale(0.96);
+}
+
+.product-pill-btn.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(29, 107, 63, 0.3);
+  font-weight: 700;
 }
 
 .card {
@@ -448,8 +525,15 @@ body,
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .card.main {
@@ -473,6 +557,47 @@ body,
   font-size: 13px;
   color: var(--muted);
   margin-top: 3px;
+}
+
+.card-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.card-close-btn {
+  appearance: none;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--muted);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  flex: none;
+}
+
+.card-close-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  stroke: currentColor;
+}
+
+.card-close-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--text);
+  transform: scale(1.08);
+}
+
+.card-close-btn:active {
+  transform: scale(0.92);
 }
 
 .tag {

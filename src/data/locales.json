@@ -11,7 +11,17 @@
     "telefono": "+56912345678",
     "descripcion": "Cafés, sándwiches y jugos naturales.",
     "verificado": true,
-    "metodo_cobro": "Edenred POS / App"
+    "metodo_cobro": "Edenred POS / App",
+    "productos": [
+      "Café de especialidad",
+      "Té",
+      "Tostadas",
+      "Jugos",
+      "Pasteles",
+      "Muffins",
+      "Galletas",
+      "Pan con agregado"
+    ]
   },
   {
     "id": 2,
@@ -25,7 +35,14 @@
     "telefono": "+56987654321",
     "descripcion": "Almuerzos del día con ensalada y postre.",
     "verificado": true,
-    "metodo_cobro": "Edenred POS"
+    "metodo_cobro": "Edenred POS",
+    "productos": [
+      "Almuerzo casero",
+      "Plato de ensalada",
+      "Jugos",
+      "Bebidas",
+      "Pasteles"
+    ]
   },
   {
     "id": 3,
@@ -39,7 +56,16 @@
     "telefono": "+56911223344",
     "descripcion": "Abarrotes, lácteos y snacks.",
     "verificado": true,
-    "metodo_cobro": "Edenred QR / POS"
+    "metodo_cobro": "Edenred QR / POS",
+    "productos": [
+      "Snacks",
+      "Golosinas",
+      "Galletas",
+      "Bebidas",
+      "Lácteos",
+      "Yogur",
+      "Aguas minerales"
+    ]
   },
   {
     "id": 4,
@@ -53,7 +79,17 @@
     "telefono": "+56955667788",
     "descripcion": "Pan amasado, empanadas y pasteles.",
     "verificado": true,
-    "metodo_cobro": "Edenred POS"
+    "metodo_cobro": "Edenred POS",
+    "productos": [
+      "Empanadas",
+      "Pasteles",
+      "Donas",
+      "Muffins",
+      "Galletas",
+      "Pan con agregado",
+      "Té",
+      "Bebidas"
+    ]
   },
   {
     "id": 5,
@@ -67,7 +103,14 @@
     "telefono": "+56999887766",
     "descripcion": "Completos, churrascos y menú diario.",
     "verificado": false,
-    "metodo_cobro": "Edenred POS"
+    "metodo_cobro": "Edenred POS",
+    "productos": [
+      "Completos",
+      "Hamburguesas",
+      "Almuerzo casero",
+      "Bebidas",
+      "Jugos"
+    ]
   },
   {
     "id": 6,
@@ -81,7 +124,17 @@
     "telefono": "+56944332211",
     "descripcion": "Compra del mes con tarjeta BAES.",
     "verificado": true,
-    "metodo_cobro": "Edenred POS / App"
+    "metodo_cobro": "Edenred POS / App",
+    "productos": [
+      "Lácteos",
+      "Yogur",
+      "Bebidas",
+      "Jugos",
+      "Aguas minerales",
+      "Snacks",
+      "Galletas",
+      "Golosinas"
+    ]
   },
   {
     "id": 7,
@@ -95,7 +148,14 @@
     "telefono": "+56971234567",
     "descripcion": "Menús diarios para estudiantes, colaciones caseras.",
     "verificado": true,
-    "metodo_cobro": "Edenred POS"
+    "metodo_cobro": "Edenred POS",
+    "productos": [
+      "Almuerzo casero",
+      "Plato de ensalada",
+      "Empanadas",
+      "Bebidas",
+      "Jugos"
+    ]
   },
   {
     "id": 8,
@@ -109,7 +169,17 @@
     "telefono": "+56972345678",
     "descripcion": "Lácteos, snacks, bebidas y abarrotes con cobro rápido.",
     "verificado": true,
-    "metodo_cobro": "Edenred App / QR"
+    "metodo_cobro": "Edenred App / QR",
+    "productos": [
+      "Lácteos",
+      "Yogur",
+      "Snacks",
+      "Golosinas",
+      "Galletas",
+      "Bebidas",
+      "Aguas minerales",
+      "Jugos"
+    ]
   },
   {
     "id": 9,
@@ -123,7 +193,17 @@
     "telefono": "+56973456789",
     "descripcion": "Cafetería de especialidad, sándwiches y jugos naturales.",
     "verificado": false,
-    "metodo_cobro": "Solo Edenred POS"
+    "metodo_cobro": "Solo Edenred POS",
+    "productos": [
+      "Café de especialidad",
+      "Té",
+      "Tostadas",
+      "Pasteles",
+      "Muffins",
+      "Donas",
+      "Jugos",
+      "Pan con agregado"
+    ]
   },
   {
     "id": 10,
@@ -137,7 +217,15 @@
     "telefono": "+56974567890",
     "descripcion": "Comida rápida, papas fritas y colaciones estudiantiles.",
     "verificado": true,
-    "metodo_cobro": "Edenred POS / App"
+    "metodo_cobro": "Edenred POS / App",
+    "productos": [
+      "Hamburguesas",
+      "Pizzas",
+      "Completos",
+      "Empanadas",
+      "Bebidas",
+      "Jugos"
+    ]
   },
   {
     "id": 11,
@@ -151,6 +239,15 @@
     "telefono": "+56975678901",
     "descripcion": "Ensaladas preparadas, frutas y opciones saludables.",
     "verificado": false,
-    "metodo_cobro": "Edenred App"
+    "metodo_cobro": "Edenred App",
+    "productos": [
+      "Plato de ensalada",
+      "Yogur",
+      "Lácteos",
+      "Aguas minerales",
+      "Jugos",
+      "Hand rolls",
+      "Sushi"
+    ]
   }
 ]

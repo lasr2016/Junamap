@@ -14,6 +14,33 @@ const CATS = {
 
 const CAT_ORDER = Object.keys(CATS);
 
+// Lista de productos para búsqueda
+const PRODUCT_LIST = [
+  "Completos",
+  "Almuerzo casero",
+  "Pizzas",
+  "Hamburguesas",
+  "Empanadas",
+  "Sushi",
+  "Hand rolls",
+  "Plato de ensalada",
+  "Café de especialidad",
+  "Té",
+  "Tostadas",
+  "Pasteles",
+  "Donas",
+  "Muffins",
+  "Galletas",
+  "Golosinas",
+  "Snacks",
+  "Bebidas",
+  "Jugos",
+  "Yogur",
+  "Lácteos",
+  "Aguas minerales",
+  "Pan con agregado"
+];
+
 // Cache para iconos personalizados para óptimo rendimiento de renderizado
 const pinIconsCache = new Map();
 
@@ -65,9 +92,9 @@ function calcDist(lat1, lon1, lat2, lon2) {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -146,8 +173,9 @@ export default function App() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [registerSuccessView, setRegisterSuccessView] = useState(false);
 
-  // Estados del Bottom Sheet (0: Peek 84px, 1: Card 260px, 2: Full 80%)
+  // Estados del Bottom Sheet (0: Peek 66px, 1: 50% mitad, 2: 80% máximo)
   const [sheetState, setSheetState] = useState(0);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [appHeight, setAppHeight] = useState(window.innerHeight);
@@ -158,6 +186,13 @@ export default function App() {
   const dragStartOffset = useRef(0);
   const hasMoved = useRef(false);
   const tooltipTimeoutRef = useRef(null);
+
+  // Resetear scroll del contenido del sheet al punto más alto al bajar o cerrar
+  useEffect(() => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollTop = 0;
+    }
+  }, [sheetState]);
 
   // Actualizar altura de contenedor
   useEffect(() => {
@@ -174,9 +209,9 @@ export default function App() {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  // Alturas de snap [84, 260, 80% appHeight]
+  // Alturas de snap [66 (grab handle), 50% appHeight (mitad), 80% appHeight (máximo)]
   const snapHeights = useMemo(() => {
-    return [84, 260, Math.round(appHeight * 0.8)];
+    return [62, Math.round(appHeight * 0.5), Math.round(appHeight * 0.8)];
   }, [appHeight]);
 
   // Offset actual calculado de forma declarativa
@@ -212,6 +247,7 @@ export default function App() {
     setGpsLoading(true);
 
     if (!navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalización.");
       setGpsLoading(false);
       setGpsFlyCount((c) => c + 1);
       return;
@@ -227,11 +263,19 @@ export default function App() {
         setGpsLoading(false);
         setGpsFlyCount((c) => c + 1);
       },
-      () => {
+      (err) => {
         setGpsLoading(false);
+        console.warn("Error de geolocalización:", err);
+        if (err.code === 1) {
+          alert("El permiso de ubicación fue bloqueado o denegado en el navegador. Haz clic en el candado o icono de configuración en la barra de direcciones de tu navegador y permite el acceso a la ubicación.");
+        } else if (err.code === 2) {
+          alert("No se pudo obtener tu ubicación actual. Comprueba la señal GPS de tu dispositivo.");
+        } else if (err.code === 3) {
+          alert("Se agotó el tiempo de espera al intentar obtener tu ubicación.");
+        }
         setGpsFlyCount((c) => c + 1);
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
 
@@ -251,6 +295,7 @@ export default function App() {
       .filter((l) => {
         const matchesCategory =
           selectedCategory === "Todos" || l.tipo === selectedCategory;
+        const prodsString = Array.isArray(l.productos) ? l.productos.join(" ") : "";
         const searchTarget = (
           l.nombre +
           " " +
@@ -258,10 +303,25 @@ export default function App() {
           " " +
           l.tipo +
           " " +
-          (l.descripcion || "")
-        ).toLowerCase();
-        const matchesSearch = searchTarget.includes(searchTerm.toLowerCase());
-        return matchesCategory && matchesSearch;
+          (l.descripcion || "") +
+          " " +
+          prodsString
+        )
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+
+        const normalizedSearch = searchTerm
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+
+        const matchesProduct = selectedProduct
+          ? Array.isArray(l.productos) && l.productos.includes(selectedProduct)
+          : true;
+        const matchesSearch = searchTarget.includes(normalizedSearch);
+        return matchesCategory && matchesSearch && matchesProduct;
       })
       .sort((a, b) => {
         if (gpsActive) {
@@ -272,7 +332,7 @@ export default function App() {
         if (ia !== ib) return ia - ib;
         return a.nombre.localeCompare(b.nombre, "es");
       });
-  }, [localesWithDist, selectedCategory, searchTerm, gpsActive]);
+  }, [localesWithDist, selectedCategory, searchTerm, gpsActive, selectedProduct]);
 
   // Local activo seleccionado (evaluado declarativamente entre los visibles)
   const activeLocal = useMemo(() => {
@@ -336,13 +396,20 @@ export default function App() {
         0
       );
     } else {
-      // Clic simple en el grab handle cicla entre estados
-      targetState = (sheetState + 1) % 3;
+      // Clic simple en el grab handle: si está arriba del todo, oculta/baja (estado 0), si no sube
+      targetState = sheetState === 2 ? 0 : (sheetState + 1) % 3;
     }
 
     dragStartY.current = null;
     setSheetState(targetState);
   };
+
+  const instructionText =
+    sheetState === 0
+      ? "Desliza hacia arriba para buscar por Comida o Local"
+      : sheetState === 1
+        ? "Desliza otra vez para ver más"
+        : "Presiona aquí para ocultar";
 
   // Cerrar Drawer o Modal con Escape
   useEffect(() => {
@@ -370,19 +437,6 @@ export default function App() {
   const visibleSheetH = snapHeights[2] - currentOffset;
   const fabBottom = Math.min(visibleSheetH, snapHeights[1]) + 14;
 
-  const countNoun = visibleLocales.length === 1 ? "local" : "locales";
-  const titleText = visibleLocales.length
-    ? gpsActive
-      ? `${visibleLocales.length} ${countNoun} cerca de ti`
-      : `${visibleLocales.length} ${countNoun} ${visibleLocales.length === 1 ? "disponible" : "disponibles"}`
-    : "Sin resultados";
-
-  const hintText =
-    sheetState === 0
-      ? "Desliza hacia arriba para ver la lista"
-      : sheetState === 1
-      ? "Desliza para ver todos"
-      : "";
 
   return (
     <div id="app">
@@ -463,10 +517,13 @@ export default function App() {
           <input
             id="q"
             type="search"
-            placeholder="Buscar local o sector"
-            aria-label="Buscar local o sector"
+            placeholder="Buscar comida, sector o local"
+            aria-label="Buscar comida, sector o local"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              if (selectedProduct) setSelectedProduct(null);
+            }}
             onClick={() => setSheetState(2)}
           />
 
@@ -561,12 +618,20 @@ export default function App() {
           onPointerUp={handlePointerUp}
         >
           <b />
-          <h2 id="title">{titleText}</h2>
-          <span id="hint">{hintText}</span>
+          <p className="grab-instruction">
+            {instructionText}
+          </p>
         </div>
 
         {/* Contenido / Body del Sheet */}
-        <div className="body" id="body" ref={bodyRef}>
+        <div
+          className="body"
+          id="body"
+          ref={bodyRef}
+          style={{
+            maxHeight: `${Math.max(0, visibleSheetH - snapHeights[0])}px`
+          }}
+        >
           {/* Tarjeta del Local Activo */}
           {activeLocal && (
             <div
@@ -583,9 +648,28 @@ export default function App() {
                     )}
                   </div>
                 </div>
-                <span className={`tag ${isLocalOpen(activeLocal) ? "o" : "c"}`}>
-                  {isLocalOpen(activeLocal) ? "Abierto" : "Cerrado"}
-                </span>
+                <div className="card-top-actions">
+                  <span className={`tag ${isLocalOpen(activeLocal) ? "o" : "c"}`}>
+                    {isLocalOpen(activeLocal) ? "Abierto" : "Cerrado"}
+                  </span>
+                  <button
+                    type="button"
+                    className="card-close-btn"
+                    aria-label="Cerrar detalle de local"
+                    onClick={() => setActiveLocalId(null)}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {activeLocal.descripcion && (
@@ -625,10 +709,46 @@ export default function App() {
             </div>
           )}
 
+          {/* 3 Filas de Productos Marcables */}
+          <div className="products-selection-section">
+            <div className="products-grid-rows">
+              {[
+                PRODUCT_LIST.slice(0, 8),
+                PRODUCT_LIST.slice(8, 16),
+                PRODUCT_LIST.slice(16)
+              ].map((row, rIdx) => (
+                <div key={rIdx} className="products-row-scroll">
+                  {row.map((prod) => {
+                    const isSelected = selectedProduct === prod;
+                    return (
+                      <button
+                        key={prod}
+                        type="button"
+                        className={`product-pill-btn ${isSelected ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedProduct((curr) => {
+                            const next = curr === prod ? null : prod;
+                            if (next) setSearchTerm("");
+                            return next;
+                          });
+                        }}
+                      >
+                        {prod}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
           {/* Subtítulo de orden */}
           {visibleLocales.length > 0 && (
             <div className="sub">
-              {gpsActive ? "Ordenados por cercanía" : "Ordenados por categoría"}
+              {selectedProduct
+                ? `Locales con ${selectedProduct} (${visibleLocales.length})`
+                : gpsActive
+                  ? "Ordenados por cercanía"
+                  : "Ordenados por categoría"}
             </div>
           )}
 
