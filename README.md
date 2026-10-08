@@ -32,11 +32,16 @@ Sigue estos 4 pasos exactos en tu terminal para clonar el repositorio, configura
 Dado que JunaMap está pensado para usarse en terreno, puedes visualizar y probar la interfaz responsiva directamente en tu teléfono móvil siguiendo estos pasos:
 Asegúrate de que tu computadora y tu celular estén conectados a la misma red Wi-Fi.
 
-Instala lo siguiente para que la ubicación funcione:
-npm i -D @vitejs/plugin-basic-ssl
+Instala lo siguiente para que activar la ubicación en el dispositivo funcione:
+
+**npm i -D @vitejs/plugin-basic-ssl**
+
 Levanta el servidor en tu terminal exponiéndolo a la red local con el comando:
+
 **npm run dev -- --host**
+
 La consola te mostrará una dirección bajo la etiqueta Network (ejemplo: https://192.168.1.35:5173).
+
 Escribe esa dirección exacta en el navegador web de tu celular
-En Chrome/Safari te saldrá una pantalla de advertencia ("La conexión no es privada").
-Solo pulsa en "Configuración avanzada" (o "Detalles") y luego en "Acceder a 192.168.x.x (no seguro)".
+- En Chrome/Safari te saldrá una pantalla de advertencia ("La conexión no es privada").
+- Solo pulsa en "Configuración avanzada" (o "Detalles") y luego en "Acceder a 192.168.x.x (no seguro)".
