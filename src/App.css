@@ -78,6 +78,18 @@ body,
   background: var(--bg);
 }
 
+/* Optimización y aceleración por hardware (GPU) para zoom táctil */
+.leaflet-zoom-animated {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.leaflet-tile {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 /* Estilos de mapa oscuro para Leaflet */
 @media (prefers-color-scheme: dark) {
   .leaflet-tile {
@@ -800,11 +812,25 @@ body,
   border-bottom: 1px solid var(--line);
 }
 
+.drawer-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-logo-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+}
+
 .drawer-logo {
   font-size: 20px;
   font-weight: 800;
   color: var(--brand);
   letter-spacing: -0.3px;
+  line-height: 1;
 }
 
 .ib-close {

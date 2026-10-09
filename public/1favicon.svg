@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1767ad"/>
+      <stop offset="1" stop-color="#07509a"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f12d36"/>
+      <stop offset="1" stop-color="#df2029"/>
+    </linearGradient>
+    <clipPath id="pin">
+      <path d="M512 20 C316 20 160 175 160 376 C160 594 359 824 493 976 Q512 999 531 976 C665 824 864 594 864 376 C864 175 708 20 512 20Z"/>
+    </clipPath>
+    <clipPath id="inner">
+      <circle cx="512" cy="348" r="252"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#pin)">
+    <rect x="150" y="10" width="362" height="1000" fill="url(#blue)"/>
+    <rect x="512" y="10" width="362" height="1000" fill="url(#red)"/>
+    <g clip-path="url(#inner)">
+      <rect x="260" y="90" width="252" height="520" fill="#064b91" opacity=".56"/>
+      <rect x="512" y="90" width="252" height="520" fill="#b91e27" opacity=".58"/>
+    </g>
+  </g>
+  <path d="M512 27 L525 53 L554 57 L533 77 L538 106 L512 92 L486 106 L491 77 L470 57 L499 53Z" fill="#fff"/>
+  <path d="M410 183 H634 V407 C634 496 585 552 505 552 C453 552 413 529 380 495 L427 438 C450 463 470 477 495 477 C526 477 547 453 547 413 V256 H410Z" fill="#fff"/>
+</svg>

@@ -1,42 +1,90 @@
-Este proyecto es una aplicación web responsiva diseñada bajo el enfoque mobile-first, que permite a los estudiantes geolocalizar de manera rápida, confiable y verificada los comercios que aceptan la tarjeta BAES (Junaeb).
+
+# JunaMap
+
+Aplicación web responsiva diseñada bajo el enfoque *mobile-first*, que permite a los estudiantes geolocalizar de manera rápida, confiable y verificada los comercios que aceptan la tarjeta BAES (Junaeb).
+
+---
+## Requisitos Previos e Instalaciones
+
+### Requisitos Previos (Docker)
+
+- **Docker Desktop** (o Docker Engine + Docker Compose) instalado y corriendo en tu computadora.
+- **Ejecutar Docker Desktop** (dejarlo abierto)
+
+### Requisitos Previos (Node.js)
+
+- **Node.js**: Versión v18.0.0 o superior (Recomendado: v22.x LTS o superior).
+- **Git**
+
+### Instalar dependencias (en caso de no usar Docker)
+
+```bash
+npm install
+```
+
+---
+## Opciones de Ejecución
+
+### Opción 1: Docker
+
+Esta opción permite levantar el proyecto en cualquier computadora que tenga Docker instalado, **sin necesidad de instalar Node.js ni dependencias locales**.
+
+1. **Clonar el repositorio:** (Recomendado clonar en vez que bajar el ZIP, con clone queda conectado de inmediato al repo)
+```bash
+git clone https://github.com/lasr2016/Junamap.git
+cd Junamap
+```
+	
+2. **Levantar el contenedor con Docker Compose**:
+```bash
+docker compose up -d --build
+```
+	
+3. **Abrir en el navegador:** Ingresa a: [http://localhost:8080](http://localhost:8080)
+	
+4. **Para detener la aplicación**: 
+```bash
+docker compose down
+```
 
 
-# Requisitos Previos
-Para ejecutar y probar este proyecto de forma local, necesitas tener instalado en tu computadora:
-Node.js: Versión v18.0.0 o superior (Recomendado: v22.13.0 LTS o superior).
-Git: Para la clonación del repositorio y control de versiones.
--Guía de Instalación y Despliegue Rápido
-Sigue estos 4 pasos exactos en tu terminal para clonar el repositorio, configurar el entorno y levantar la aplicación en menos de un minuto:
+### Opción 2: Node.js
 
-- **Paso 1: Clonar el Repositorio**
-  Abre tu consola (Git Bash, CMD o PowerShell), navega hasta la carpeta donde deseas guardar el proyecto (por ejemplo, tu Escritorio) y ejecuta:
+Si deseas modificar código en tiempo real con recarga automática:
 
-  git clone https://github.com/lasr2016/Junamap.git
+1. **Clonar, acceder e instalar dependencias:**
+```bash
+git clone https://github.com/lasr2016/Junamap.git
+cd Junamap
+npm install
+```
+	
+2. **Configurar variables de entorno:**
+   - Copia o renombra `.env.example` a `.env`
+   - Solicita las credenciales de Supabase al grupo y pégalas en `.env`.
 
-- **Paso 2: Entrar al Directorio del Proyecto**
-  cd junamap
+3. **Levantar el servidor de desarrollo:**
+```bash
+npm run dev
+```
+   - Abre en tu navegador la dirección indicada en la consola: [http://localhost:5173/](http://localhost:5173/)
 
-- **Paso 3: Instalar las Dependencias**
-  Ejecuta el siguiente comando para descargar de forma automática las librerías necesarias (React, Vite, Leaflet, Tailwind CSS, entre otras):
-  **npm install**
-  (Nota: La carpeta pesada node_modules no se incluye en el repositorio debido al archivo .gitignore, por lo que este paso es obligatorio para reconstruirla localmente).
-
-- **Paso 4: Levantar el Servidor de Desarrollo**
-  Para arrancar el servidor en tu computadora:
-  **npm run dev**
-  Abre en tu navegador la dirección que te entregue la consola, la cual suele ser: http://localhost:5173/
 
 ---
 
 ## ¿Cómo probarlo en tu Celular (Red Local)?
-Dado que JunaMap está pensado para usarse en terreno, puedes visualizar y probar la interfaz responsiva directamente en tu teléfono móvil siguiendo estos pasos:
-Asegúrate de que tu computadora y tu celular estén conectados a la misma red Wi-Fi.
 
-Instala lo siguiente para que la ubicación funcione:
-npm i -D @vitejs/plugin-basic-ssl
-Levanta el servidor en tu terminal exponiéndolo a la red local con el comando:
-**npm run dev -- --host**
-La consola te mostrará una dirección bajo la etiqueta Network (ejemplo: https://192.168.1.35:5173).
-Escribe esa dirección exacta en el navegador web de tu celular
-En Chrome/Safari te saldrá una pantalla de advertencia ("La conexión no es privada").
-Solo pulsa en "Configuración avanzada" (o "Detalles") y luego en "Acceder a 192.168.x.x (no seguro)".
+Dado que JunaMap está pensado para usarse en terreno y requiere geolocalización (la cual exige HTTPS en dispositivos externos):
+
+- Asegúrate de que tu computadora y tu celular estén conectados a la **misma red Wi-Fi**.
+    
+- Levanta el servidor exponiéndolo a la red local:
+```bash
+npm run dev --host
+```
+    
+- La consola te mostrará una dirección bajo la etiqueta **Network** (ejemplo: `https://192.168.1.35:5173`).
+    
+- Abre esa dirección en el navegador web de tu celular.
+    
+- Si aparece la advertencia _"La conexión no es privada"_ (debido al certificado autofirmado para SSL local), pulsa en **Configuración avanzada** y selecciona **Acceder a la dirección (no seguro)** para permitir el uso del GPS.

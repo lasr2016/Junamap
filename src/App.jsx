@@ -447,11 +447,16 @@ export default function App() {
           zoom={15}
           zoomControl={false}
           attributionControl={false}
+          preferCanvas={true}
+          wheelPxPerZoomLevel={120}
           className="w-full h-full"
         >
           <TileLayer
             maxZoom={19}
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            updateWhenZooming={false}
+            updateInterval={100}
+            keepBuffer={4}
           />
 
           {/* Marcador animado de ubicación del usuario */}
@@ -806,15 +811,21 @@ export default function App() {
         className={`drawer ${isDrawerOpen ? "open" : ""}`}
         id="drawer"
         aria-label="Menú principal"
-        aria-hidden={!isDrawerOpen}
+        inert={!isDrawerOpen}
       >
         <div className="drawer-header">
-          <span className="drawer-logo">JunaMap</span>
+          <div className="drawer-logo-container">
+            <img src="/1favicon.svg" alt="JunaMap" className="drawer-logo-icon" />
+            <span className="drawer-logo">JunaMap</span>
+          </div>
           <button
             className="ib-close"
             id="close-drawer"
             aria-label="Cerrar menú"
-            onClick={() => setIsDrawerOpen(false)}
+            onClick={(e) => {
+              e.currentTarget.blur();
+              setIsDrawerOpen(false);
+            }}
           >
             &times;
           </button>
@@ -879,14 +890,15 @@ export default function App() {
         className={`modal-form-page ${isRegisterModalOpen ? "open" : ""}`}
         id="register-modal"
         aria-label="Formulario Registrar mi local"
-        aria-hidden={!isRegisterModalOpen}
+        inert={!isRegisterModalOpen}
       >
         <div className="modal-header">
           <button
             className="ib-close"
             id="close-register-modal"
             aria-label="Cerrar formulario"
-            onClick={() => {
+            onClick={(e) => {
+              e.currentTarget.blur();
               setIsRegisterModalOpen(false);
               setRegisterSuccessView(false);
             }}

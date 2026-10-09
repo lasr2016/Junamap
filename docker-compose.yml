@@ -1,0 +1,10 @@
+services:
+  junamap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: junamap:latest
+    container_name: junamap-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
