@@ -61,12 +61,11 @@ body,
 
 #app {
   position: relative;
+  width: 100%;
   height: 100%;
-  max-width: 480px;
-  margin: 0 auto;
+  margin: 0;
   overflow: hidden;
   padding-top: env(safe-area-inset-top, 0px);
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
 }
 
 #map {
