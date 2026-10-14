@@ -62,11 +62,10 @@ body,
 #app {
   position: relative;
   height: 100%;
-  max-width: 480px;
+  max-width: 100%;
   margin: 0 auto;
   overflow: hidden;
   padding-top: env(safe-area-inset-top, 0px);
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
 }
 
 #map {
@@ -853,40 +852,156 @@ body,
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.drawer-btn-primary {
+/* Sección Bienvenida / Auth */
+.drawer-auth-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 2px 2px;
+}
+
+.drawer-greeting {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.drawer-auth-subtext {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.drawer-auth-buttons {
+  display: flex;
+  gap: 8px;
   width: 100%;
-  min-height: 52px;
-  border-radius: 14px;
-  border: 0;
-  background: var(--brand);
-  color: #ffffff;
-  font-size: 15px;
+}
+
+.drawer-btn-auth {
+  flex: 1;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 0 16px;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.15s ease;
+  border: 0;
+}
+
+.drawer-btn-auth.primary {
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.drawer-btn-auth.secondary {
+  background: transparent;
+  color: var(--brand);
+  border: 1.5px solid var(--brand);
+}
+
+.drawer-btn-auth:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.drawer-btn-auth:active {
+  transform: translateY(0);
+}
+
+/* Tarjeta "¿Falta un local en el mapa?" */
+.drawer-merchant-card {
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-merchant-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.drawer-merchant-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+
+.drawer-missing-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.drawer-missing-btn {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 10px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.drawer-missing-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.drawer-missing-btn:active {
+  transform: translateY(0);
+}
+
+/* Sección AYUDA */
+.drawer-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin: 4px 6px 0;
 }
 
 .drawer-item {
-  min-height: 52px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  border-radius: 12px;
-  font-size: 15px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--text);
-}
-
-.drawer-item.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .drawer-item.simple {
@@ -897,19 +1012,10 @@ body,
   background: var(--bg);
 }
 
-.badge-disabled {
-  font-size: 11px;
-  font-weight: 700;
-  background: var(--line);
-  color: var(--muted);
-  padding: 3px 8px;
-  border-radius: 10px;
-}
-
 .drawer-divider {
   border: 0;
   border-top: 1px solid var(--line);
-  margin: 12px 0;
+  margin: 2px 0;
 }
 
 .drawer-footer {
@@ -1100,4 +1206,119 @@ body,
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
+}
+
+/* Estilos de Sugerencia */
+.form-group .opt {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.suggest-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.suggest-chip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+}
+
+.suggest-mode-notice {
+  font-size: 13px !important;
+  color: var(--muted) !important;
+  font-style: italic;
+  margin-top: 8px !important;
+  max-width: 300px !important;
+}
+
+.suggest-item-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.suggest-divider {
+  border: 0;
+  border-top: 1.5px dashed var(--line);
+  margin: 8px 0;
+}
+
+.suggest-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -4px;
+}
+
+.suggest-item-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--brand);
+  background: rgba(29, 107, 63, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.btn-remove-suggest {
+  background: none;
+  border: 0;
+  color: #c93b2b;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 6px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.btn-remove-suggest:hover {
+  opacity: 0.8;
+}
+
+.btn-add-more-suggest {
+  background: transparent;
+  color: var(--brand);
+  border: 1.5px dashed var(--brand);
+  border-radius: 12px;
+  min-height: 42px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.btn-add-more-suggest:hover {
+  background: rgba(29, 107, 63, 0.08);
+  border-style: solid;
+}
+
+.btn-add-more-suggest:active {
+  transform: scale(0.99);
+}
+
+.suggest-max-reached-notice {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  margin: 4px 0 6px;
+  font-weight: 600;
 }

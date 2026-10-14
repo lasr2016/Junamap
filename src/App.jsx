@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import localesData from "./data/locales.json";
+import { supabase } from "./supabaseClient";
 import "./App.css";
 
 // Categorías y Colores oficiales de JunaMap
@@ -104,19 +105,45 @@ function distStr(d, gpsActive) {
   return d < 1000 ? `a ${Math.round(d)} m` : `a ${(d / 1000).toFixed(1)} km`;
 }
 
-// Formatear horas (ej. 8 -> 8:00, 15.5 -> 15:30)
+// Convertir valor de hora (TIME o numérico) a minutos para comparaciones precisas
+function toMinutes(val) {
+  if (val == null) return null;
+  if (typeof val === "string") {
+    const parts = val.split(":");
+    if (parts.length >= 2) {
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    }
+  }
+  if (typeof val === "number") {
+    return Math.round(val * 60);
+  }
+  return null;
+}
+
+// Formatear horas (soporta formato TIME 'HH:MM[:SS]' y número decimal '8.5')
 function fmt(h) {
   if (h == null) return "";
+  if (typeof h === "string") {
+    const parts = h.split(":");
+    if (parts.length >= 2) {
+      return `${parseInt(parts[0], 10)}:${parts[1]}`;
+    }
+    return h;
+  }
   const m = Math.round((h % 1) * 60);
   return Math.floor(h) + ":" + String(m).padStart(2, "0");
 }
 
-// Verificar si el local está abierto según horario simulado
+// Verificar si el local está abierto según horario actual
 function isLocalOpen(l) {
   if (l.abre == null || l.cierra == null) return true;
   const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
-  return currentHour >= l.abre && currentHour < l.cierra;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const abreMin = toMinutes(l.abre);
+  const cierraMin = toMinutes(l.cierra);
+
+  if (abreMin == null || cierraMin == null) return true;
+  return currentMinutes >= abreMin && currentMinutes < cierraMin;
 }
 
 // Controlador del Mapa Leaflet para centrado, animación y clics
@@ -156,6 +183,32 @@ function MapController({ onMapClick, activeLocal, userCoords, gpsFlyCount }) {
 }
 
 export default function App() {
+  // Estado de locales obtenidos desde Supabase (respaldo localesData)
+  const [locales, setLocales] = useState(localesData);
+
+  // Cargar locales desde Supabase
+  useEffect(() => {
+    async function fetchLocales() {
+      try {
+        const { data, error } = await supabase
+          .from("locales")
+          .select("*")
+          .eq("activo", true)
+          .order("id", { ascending: true });
+
+        if (error) {
+          console.warn("No se pudieron cargar locales de Supabase, usando respaldo:", error.message);
+        } else if (data && data.length > 0) {
+          setLocales(data);
+        }
+      } catch (err) {
+        console.warn("Error de conexión con Supabase:", err);
+      }
+    }
+
+    fetchLocales();
+  }, []);
+
   // Estado de búsqueda y categorías
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
@@ -172,6 +225,41 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [registerSuccessView, setRegisterSuccessView] = useState(false);
+
+  // Estados de Modal "Sugerencia"
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
+  const [suggestSuccessView, setSuggestSuccessView] = useState(false);
+  const [suggestItems, setSuggestItems] = useState([
+    { id: 1, nombre: "", direccion: "", tipo: "Almuerzo" }
+  ]);
+
+  const handleAddSuggestItem = () => {
+    setSuggestItems((prev) => {
+      if (prev.length >= 3) return prev;
+      return [
+        ...prev,
+        { id: Date.now(), nombre: "", direccion: "", tipo: "Almuerzo" }
+      ];
+    });
+  };
+
+  const handleUpdateSuggestItem = (index, field, value) => {
+    setSuggestItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const handleRemoveSuggestItem = (index) => {
+    setSuggestItems((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const resetSuggestForm = () => {
+    setIsSuggestModalOpen(false);
+    setSuggestSuccessView(false);
+    setSuggestItems([{ id: 1, nombre: "", direccion: "", tipo: "Almuerzo" }]);
+  };
 
   // Estados del Bottom Sheet (0: Peek 66px, 1: 50% mitad, 2: 80% máximo)
   const [sheetState, setSheetState] = useState(0);
@@ -281,13 +369,13 @@ export default function App() {
 
   // Locales con distancia calculada
   const localesWithDist = useMemo(() => {
-    return localesData.map((l) => ({
+    return locales.map((l) => ({
       ...l,
       d: gpsActive
         ? calcDist(userCoords.lat, userCoords.lng, l.lat, l.lng)
         : null
     }));
-  }, [gpsActive, userCoords]);
+  }, [locales, gpsActive, userCoords]);
 
   // Filtrado de locales
   const visibleLocales = useMemo(() => {
@@ -418,6 +506,9 @@ export default function App() {
         if (isRegisterModalOpen) {
           setIsRegisterModalOpen(false);
           setRegisterSuccessView(false);
+        } else if (isSuggestModalOpen) {
+          setIsSuggestModalOpen(false);
+          setSuggestSuccessView(false);
         } else if (isDrawerOpen) {
           setIsDrawerOpen(false);
         }
@@ -425,12 +516,18 @@ export default function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRegisterModalOpen, isDrawerOpen]);
+  }, [isRegisterModalOpen, isSuggestModalOpen, isDrawerOpen]);
 
   // Enviar formulario "Registrar mi local"
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
     setRegisterSuccessView(true);
+  };
+
+  // Enviar formulario "Sugerencia"
+  const handleSuggestSubmit = (e) => {
+    e.preventDefault();
+    setSuggestSuccessView(true);
   };
 
   // Posición dinámica del FAB
@@ -832,24 +929,67 @@ export default function App() {
         </div>
 
         <div className="drawer-content">
-          <button
-            className="drawer-btn-primary"
-            id="btn-open-register"
-            onClick={() => {
-              setIsDrawerOpen(false);
-              setRegisterSuccessView(false);
-              setIsRegisterModalOpen(true);
-            }}
-          >
-            Registrar mi local &rarr;
-          </button>
-
-          <div className="drawer-item disabled">
-            <span>Iniciar sesión</span>
-            <span className="badge-disabled">Próximamente</span>
+          {/* SECCIÓN BIENVENIDA / INICIAR SESIÓN */}
+          <div className="drawer-auth-box">
+            <h3 className="drawer-greeting">Hola 👋</h3>
+            <p className="drawer-auth-subtext">
+              Inicia sesión para guardar tus locales favoritos
+            </p>
+            <div className="drawer-auth-buttons">
+              <button
+                type="button"
+                className="drawer-btn-auth primary"
+                onClick={() => alert("Próximamente: Iniciar sesión")}
+              >
+                Iniciar sesión
+              </button>
+              <button
+                type="button"
+                className="drawer-btn-auth secondary"
+                onClick={() => alert("Próximamente: Crear cuenta")}
+              >
+                Crear cuenta
+              </button>
+            </div>
           </div>
 
           <hr className="drawer-divider" />
+
+          {/* TARJETA ¿FALTA UN LOCAL EN EL MAPA? */}
+          <div className="drawer-merchant-card">
+            <h4 className="drawer-merchant-title">¿Falta un local en el mapa?</h4>
+            <p className="drawer-merchant-desc">Ayúdanos a completarlo</p>
+            <div className="drawer-missing-options">
+              <button
+                type="button"
+                className="drawer-missing-btn"
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  setRegisterSuccessView(false);
+                  setIsRegisterModalOpen(true);
+                }}
+              >
+                Soy dueño
+              </button>
+
+              <button
+                type="button"
+                className="drawer-missing-btn"
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  setSuggestSuccessView(false);
+                  setIsSuggestModalOpen(true);
+                }}
+              >
+                Conozco uno
+              </button>
+            </div>
+          </div>
+
+          <hr className="drawer-divider" />
+
+          {/* SECCIÓN AYUDA */}
+          <div className="drawer-section-title">AYUDA</div>
 
           <div
             className="drawer-item simple"
@@ -1016,6 +1156,154 @@ export default function App() {
                     setIsRegisterModalOpen(false);
                     setRegisterSuccessView(false);
                   }}
+                >
+                  Volver al mapa
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* MODAL "SUGERENCIA" */}
+      <section
+        className={`modal-form-page ${isSuggestModalOpen ? "open" : ""}`}
+        id="suggest-modal"
+        aria-label="Modal Sugerencia"
+        inert={!isSuggestModalOpen}
+      >
+        <div className="modal-header">
+          <button
+            className="ib-close"
+            id="close-suggest-modal"
+            aria-label="Cerrar sugerencia"
+            onClick={(e) => {
+              e.currentTarget.blur();
+              resetSuggestForm();
+            }}
+          >
+            &times;
+          </button>
+          <h2 className="modal-title">Sugerencia</h2>
+        </div>
+
+        <div className="modal-body">
+          {!suggestSuccessView ? (
+            <div id="suggest-form-view">
+              <p className="modal-description">
+                ¿Conoces un local que acepte tarjeta BAES? Ayúdanos a sumarlo al mapa.
+              </p>
+
+              <form
+                id="form-suggest-local"
+                className="register-form"
+                onSubmit={handleSuggestSubmit}
+              >
+                {suggestItems.map((item, idx) => (
+                  <div key={item.id} className="suggest-item-block">
+                    {idx > 0 && <hr className="suggest-divider" />}
+
+                    {suggestItems.length > 1 && (
+                      <div className="suggest-item-header">
+                        <span className="suggest-item-tag">Local #{idx + 1}</span>
+                        <button
+                          type="button"
+                          className="btn-remove-suggest"
+                          onClick={() => handleRemoveSuggestItem(idx)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="form-group">
+                      <label htmlFor={`sug-nombre-${idx}`}>
+                        {idx === 0 ? "Nombre del local" : `Nombre del local ${idx + 1}`}{" "}
+                        <span className="req">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id={`sug-nombre-${idx}`}
+                        required
+                        value={item.nombre}
+                        onChange={(e) => handleUpdateSuggestItem(idx, "nombre", e.target.value)}
+                        placeholder="Ej: Casino Don Pepe, Minimarket..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`sug-direccion-${idx}`}>
+                        {idx === 0 ? "Dirección" : `Dirección ${idx + 1}`}{" "}
+                        <span className="opt">(opcional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        id={`sug-direccion-${idx}`}
+                        value={item.direccion}
+                        onChange={(e) => handleUpdateSuggestItem(idx, "direccion", e.target.value)}
+                        placeholder="Ej: 1 Norte con 2 Oriente, o cerca de..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>
+                        {idx === 0 ? "Tipo de local" : `Tipo de local ${idx + 1}`}{" "}
+                        <span className="req">*</span>
+                      </label>
+                      <div className="suggest-chips-grid">
+                        {[...CAT_ORDER, "No estoy seguro"].map((c) => {
+                          const isCatActive = item.tipo === c;
+                          const catColor = c === "No estoy seguro" ? "#5a6b7c" : (CATS[c] || "#1d6b3f");
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                              className={`chip suggest-chip ${isCatActive ? "on" : ""}`}
+                              style={{ "--c": catColor }}
+                              onClick={() => handleUpdateSuggestItem(idx, "tipo", c)}
+                            >
+                              <i />
+                              {c}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {suggestItems.length < 3 ? (
+                  <button
+                    type="button"
+                    className="btn-add-more-suggest"
+                    onClick={handleAddSuggestItem}
+                  >
+                    + Conozco otro más
+                  </button>
+                ) : (
+                  <div className="suggest-max-reached-notice">
+                    Máximo 3 sugerencias por envío
+                  </div>
+                )}
+
+                <button type="submit" className="btn-submit-form" style={{ marginTop: "4px" }}>
+                  Enviar sugerencia
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div id="suggest-success-view">
+              <div className="form-placeholder-state">
+                <div className="icon">🎉</div>
+                <h3>Muchas gracias por tu contribución al mapa</h3>
+                <p className="suggest-mode-notice">
+                  actualmente no se están guardando estos datos - modo prueba
+                </p>
+                <button
+                  type="button"
+                  className="btn-back"
+                  id="btn-back-to-map-suggest"
+                  onClick={resetSuggestForm}
                 >
                   Volver al mapa
                 </button>

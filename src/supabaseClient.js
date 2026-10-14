@@ -15,7 +15,7 @@ export const supabase = createClient(supabaseUrl || "", supabaseAnonKey || "");
 
 
 // Prueba rápida de conectividad
-supabase.auth.getSession().then(({ data, error }) => {
+supabase.auth.getSession().then(({ error }) => {
   if (error) {
     console.error("❌ Error conectando a Supabase:", error.message);
   } else {
