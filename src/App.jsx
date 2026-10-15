@@ -3,14 +3,15 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import localesData from "./data/locales.json";
 import { supabase } from "./supabaseClient";
+import { crearPinIcon } from "./utils/pinIcons";
 import "./App.css";
 
 // Categorías y Colores oficiales de JunaMap
 const CATS = {
-  Almuerzo: "#e4572e",
-  Cafetería: "#8a5a3b",
-  Minimarket: "#2a7de1",
-  Panadería: "#e0a100"
+  Almuerzo: "#d8502c",
+  Cafetería: "#8b5336",
+  Minimarket: "#257ce6",
+  Panadería: "#df9800"
 };
 
 const CAT_ORDER = Object.keys(CATS);
@@ -41,41 +42,6 @@ const PRODUCT_LIST = [
   "Aguas minerales",
   "Pan con agregado"
 ];
-
-// Cache para iconos personalizados para óptimo rendimiento de renderizado
-const pinIconsCache = new Map();
-
-function getPinIcon(color, isSelected, isDimmed) {
-  const key = `${color}_${isSelected}_${isDimmed}`;
-  if (pinIconsCache.has(key)) {
-    return pinIconsCache.get(key);
-  }
-
-  const svgHtml = `
-    <svg class="pin-svg" viewBox="0 0 28 38">
-      <path d="M14 38 C 2 24 0 18 0 14 A 14 14 0 0 1 28 14 C 28 18 26 24 14 38 Z" 
-            fill="${color}" 
-            stroke="#ffffff" 
-            stroke-width="2.5"/>
-      <circle cx="14" cy="14" r="4.5" fill="#ffffff"/>
-    </svg>
-  `;
-
-  const classes = ["custom-pin"];
-  if (isSelected) classes.push("sel");
-  if (isDimmed) classes.push("dim");
-
-  const icon = L.divIcon({
-    className: classes.join(" "),
-    html: svgHtml,
-    iconSize: [28, 38],
-    iconAnchor: [14, 38],
-    popupAnchor: [0, -38]
-  });
-
-  pinIconsCache.set(key, icon);
-  return icon;
-}
 
 // Icono animado de pulso tipo radar para la posición del usuario
 const userLocationIcon = L.divIcon({
@@ -229,6 +195,7 @@ export default function App() {
   // Estados de Modal "Sugerencia"
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
   const [suggestSuccessView, setSuggestSuccessView] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [suggestItems, setSuggestItems] = useState([
     { id: 1, nombre: "", direccion: "", tipo: "Almuerzo" }
   ]);
@@ -268,6 +235,20 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [appHeight, setAppHeight] = useState(window.innerHeight);
 
+  // Filtros activos: categoría distinta a 'Todos' o comida seleccionada
+  const hasActiveFilters = selectedCategory !== "Todos" || selectedProduct !== null;
+
+  const handleClearFilters = () => {
+    setSelectedCategory("Todos");
+    setSelectedProduct(null);
+    if (bodyRef.current) {
+      const rows = bodyRef.current.querySelectorAll(".products-row-scroll");
+      rows.forEach((row) => {
+        row.scrollLeft = 0;
+      });
+    }
+  };
+
   const sheetRef = useRef(null);
   const bodyRef = useRef(null);
   const dragStartY = useRef(null);
@@ -275,10 +256,17 @@ export default function App() {
   const hasMoved = useRef(false);
   const tooltipTimeoutRef = useRef(null);
 
-  // Resetear scroll del contenido del sheet al punto más alto al bajar o cerrar
+  // Resetear scroll del contenido del sheet al punto más alto al bajar o cerrar,
+  // y reiniciar el scroll horizontal de los filtros de productos a la izquierda
   useEffect(() => {
     if (bodyRef.current) {
       bodyRef.current.scrollTop = 0;
+      if (sheetState === 0) {
+        const rows = bodyRef.current.querySelectorAll(".products-row-scroll");
+        rows.forEach((row) => {
+          row.scrollLeft = 0;
+        });
+      }
     }
   }, [sheetState]);
 
@@ -503,7 +491,9 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
-        if (isRegisterModalOpen) {
+        if (isAboutModalOpen) {
+          setIsAboutModalOpen(false);
+        } else if (isRegisterModalOpen) {
           setIsRegisterModalOpen(false);
           setRegisterSuccessView(false);
         } else if (isSuggestModalOpen) {
@@ -516,7 +506,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRegisterModalOpen, isSuggestModalOpen, isDrawerOpen]);
+  }, [isAboutModalOpen, isRegisterModalOpen, isSuggestModalOpen, isDrawerOpen]);
 
   // Enviar formulario "Registrar mi local"
   const handleRegisterSubmit = (e) => {
@@ -569,8 +559,7 @@ export default function App() {
           {localesWithDist.map((local) => {
             const isVisible = visibleLocales.some((vl) => vl.id === local.id);
             const isSelected = activeLocal?.id === local.id;
-            const pinColor = CATS[local.tipo] || "#1d6b3f";
-            const icon = getPinIcon(pinColor, isSelected, !isVisible);
+            const icon = crearPinIcon(local.tipo, isSelected, !isVisible);
 
             return (
               <Marker
@@ -670,7 +659,7 @@ export default function App() {
           id="loc-tooltip"
           role="tooltip"
         >
-          <span>Te recomendamos activar la ubicación para una mejor experiencia</span>
+          <span>Te recomendamos activar la ubicación para una mejor experiencia de usuario.</span>
           <button
             className="loc-tooltip-close"
             id="loc-tooltip-close"
@@ -813,6 +802,29 @@ export default function App() {
 
           {/* 3 Filas de Productos Marcables */}
           <div className="products-selection-section">
+            {hasActiveFilters && (
+              <div className="filters-clear-wrapper">
+                <button
+                  type="button"
+                  className="btn-clear-filters"
+                  onClick={handleClearFilters}
+                  aria-label="Eliminar filtros aplicados"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  <span>Eliminar filtros</span>
+                </button>
+              </div>
+            )}
             <div className="products-grid-rows">
               {[
                 PRODUCT_LIST.slice(0, 8),
@@ -1000,11 +1012,10 @@ export default function App() {
 
           <div
             className="drawer-item simple"
-            onClick={() =>
-              alert(
-                "JunaMap Talca · Plataforma colaborativa para estudiantes que utilizan su beca BAES."
-              )
-            }
+            onClick={() => {
+              setIsDrawerOpen(false);
+              setIsAboutModalOpen(true);
+            }}
           >
             <span>Acerca de JunaMap</span>
           </div>
@@ -1312,6 +1323,68 @@ export default function App() {
           )}
         </div>
       </section>
+
+      {/* MODAL / NOTIFICACIÓN "ACERCA DE JUNAMAP" */}
+      <div
+        className={`about-dialog-backdrop ${isAboutModalOpen ? "open" : ""}`}
+        id="about-modal-backdrop"
+        onClick={() => setIsAboutModalOpen(false)}
+        inert={!isAboutModalOpen}
+      >
+        <div
+          className="about-dialog-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="about-dialog-title"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="about-dialog-header">
+            <div className="about-dialog-title-wrap">
+              <span className="about-dialog-logo-dot" />
+              <h2 id="about-dialog-title" className="about-dialog-title">
+                Acerca de JunaMap
+              </h2>
+            </div>
+            <button
+              type="button"
+              className="about-dialog-close"
+              aria-label="Cerrar notificación"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setIsAboutModalOpen(false);
+              }}
+            >
+              &times;
+            </button>
+          </div>
+
+          <div className="about-dialog-body">
+            <div className="about-dialog-section">
+              <h3>Aviso de independencia y no afiliación</h3>
+              <p>
+                Esta aplicación es una iniciativa comunitaria e independiente desarrollada
+                con fines meramente informativos para la comunidad estudiantil. No cuenta
+                con afiliación, patrocinio, respaldo ni vínculo oficial con la Junta Nacional
+                de Auxilio Escolar y Becas (JUNAEB), la Beca de Alimentación para la Educación
+                Superior (BAES), el Ministerio de Educación ni las empresas operadoras del
+                beneficio (Edenred, Pluxee/Sodexo). Todas las marcas, logotipos y nombres
+                comerciales mencionados pertenecen exclusivamente a sus respectivos titulares.
+              </p>
+            </div>
+
+            <div className="about-dialog-section">
+              <h3>Sobre los datos, comercios y vigencia</h3>
+              <p>
+                La disponibilidad de los locales, los precios, horarios y la aceptación
+                efectiva del saldo dependen exclusivamente de las políticas de cada comercio
+                y del estado operativo del servicio en cada momento. La información exhibida
+                es referencial; se recomienda confirmar la aceptación del medio de pago en caja
+                antes del consumo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
