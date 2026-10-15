@@ -80,7 +80,7 @@ Dado que JunaMap está pensado para usarse en terreno y requiere geolocalizació
     
 - Levanta el servidor exponiéndolo a la red local:
 ```bash
-npm run dev --host
+npm run dev -- --host
 ```
     
 - La consola te mostrará una dirección bajo la etiqueta **Network** (ejemplo: `https://192.168.1.35:5173`).

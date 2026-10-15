@@ -341,27 +341,78 @@ body,
   opacity: 1;
 }
 
-/* Estilos Marcadores Leaflet */
+/* Reset para que Leaflet no añada marcos ni fondos blancos por defecto a los divIcon */
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
 .leaflet-marker-icon.custom-pin {
   background: none;
   border: none;
 }
 
-.pin-svg {
-  width: 28px;
-  height: 38px;
-  display: block;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  transition: transform 0.25s ease, opacity 0.25s ease;
+/* Contenedor principal del pin */
+.pin-circulo-puntero {
+  width: 34px;
+  height: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.22));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
   transform-origin: bottom center;
 }
 
-.custom-pin.sel .pin-svg {
-  transform: scale(1.35);
+.pin-circulo-puntero:hover {
+  transform: scale(1.15) translateY(-3px);
+  z-index: 1000 !important;
 }
 
-.custom-pin.dim .pin-svg {
-  opacity: 0.25;
+/* Círculo superior con el ícono SVG centrado */
+.pin-circulo-cuerpo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+.pin-circulo-cuerpo svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Flecha/puntero inferior que señala la coordenada exacta */
+.pin-circulo-flecha {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+}
+
+/* Estados de selección y atenuado */
+.custom-pin.sel {
+  z-index: 1000 !important;
+}
+
+.custom-pin.sel .pin-circulo-puntero {
+  transform: scale(1.28) translateY(-4px);
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+
+.custom-pin.sel .pin-circulo-cuerpo {
+  box-shadow: 0 0 0 2.5px #ffffff, 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.custom-pin.dim .pin-circulo-puntero {
+  opacity: 0.28;
+  filter: none;
 }
 
 /* Ubicación usuario */
@@ -472,17 +523,90 @@ body,
   animation: fadeIn 0.2s ease;
 }
 
+/* Botón Eliminar Filtros */
+.filters-clear-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+  padding: 0 4px;
+  animation: fadeIn 0.2s ease;
+}
+
+.btn-clear-filters {
+  appearance: none;
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  line-height: 1;
+}
+
+.btn-clear-filters svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  flex: none;
+}
+
+.btn-clear-filters:hover {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-clear-filters:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn-clear-filters {
+    background: rgba(239, 68, 68, 0.14);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.35);
+  }
+
+  :root:not([data-theme="light"]) .btn-clear-filters:hover {
+    background: rgba(239, 68, 68, 0.24);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+}
+
+:root[data-theme="dark"] .btn-clear-filters {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+:root[data-theme="dark"] .btn-clear-filters:hover {
+  background: rgba(239, 68, 68, 0.24);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
 .products-grid-rows {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  /* Efecto de desvanecimiento suave en el borde derecho para indicar más contenido */
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 40px), transparent 100%);
 }
 
 .products-row-scroll {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 2px 4px 4px;
+  padding: 2px 36px 4px 4px;
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
@@ -1321,4 +1445,126 @@ body,
   border-radius: 12px;
   margin: 4px 0 6px;
   font-weight: 600;
+}
+
+/* Modal / Notificación Acerca de JunaMap */
+.about-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.about-dialog-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.about-dialog-card {
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  transform: scale(0.94) translateY(8px);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.about-dialog-backdrop.open .about-dialog-card {
+  transform: scale(1) translateY(0);
+}
+
+.about-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.about-dialog-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.about-dialog-logo-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.about-dialog-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+
+.about-dialog-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.about-dialog-close:hover {
+  background: var(--line);
+}
+
+.about-dialog-close:active {
+  transform: scale(0.92);
+}
+
+.about-dialog-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.about-dialog-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.about-dialog-section h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--brand);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.about-dialog-section p {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0;
 }

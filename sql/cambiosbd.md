@@ -20,7 +20,7 @@ Este documento detalla las modificaciones realizadas en el esquema de la base de
 ## 2. Comandos SQL
 
 ### Opción A: Aplicar el cambio a una tabla existente en Supabase (Sin perder datos)
-Si ya tienes la tabla creada y con datos en Supabase, ejecuta esta consulta en el **SQL Editor** para convertir las columnas existentes automáticamente:
+Si ya tienes la tabla creada (del archivo locales.sql) y con datos en Supabase, ejecuta esta consulta en el **SQL Editor** para convertir las columnas existentes automáticamente:
 
 ```sql
 -- Convertir las columnas 'abre' y 'cierra' de NUMERIC a TIME
