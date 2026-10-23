@@ -6,7 +6,7 @@
 
 ### Stack Tecnológico
 - **Frontend:** React 19 + Vite, Leaflet / React-Leaflet, Tailwind CSS.
-- **Backend & Base de Datos:** Supabase (PostgreSQL) con Row Level Security (RLS).
+- **Datos:** Archivo JSON local estático (`src/data/locales.json`).
 - **Despliegue local:** Soporte para Node.js y contenedores Docker (Docker Compose + Nginx).
 
 ---
@@ -29,8 +29,6 @@
    - Acceso a direcciones en Google Maps (*Cómo llegar*) y llamada directa.
    - Menú lateral (drawer) preparado para futuras opciones de cuenta y soporte.
 
-4. **Migración a Base de Datos (Supabase):**
-   - Transición desde un JSON local estático a una tabla PostgreSQL `public.locales`.
-   - Políticas de seguridad RLS y permisos públicos (`anon`) configurados.
-   - Scripts SQL versionados en la carpeta `sql/` con carga inicial de comercios.
-   - Modo de respaldo local (*fallback*) en el cliente React ante cortes de red.
+4. **Alimentación de Datos (JSON Local):**
+   - Carga directa y optimizada desde `src/data/locales.json`.
+   - Información completa de locales: coordenadas, horarios, productos, medios de cobro y verificación.

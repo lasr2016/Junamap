@@ -59,9 +59,6 @@ cd Junamap
 npm install
 ```
 	
-2. **Configurar variables de entorno:**
-   - Copia o renombra `.env.example` a `.env`
-   - Solicita las credenciales de Supabase al grupo y pégalas en `.env`.
 
 3. **Levantar el servidor de desarrollo:**
 ```bash
