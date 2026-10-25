@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import localesData from "./data/locales.json";
-import { supabase } from "./supabaseClient";
 import { crearPinIcon } from "./utils/pinIcons";
 import "./App.css";
 
@@ -149,31 +148,8 @@ function MapController({ onMapClick, activeLocal, userCoords, gpsFlyCount }) {
 }
 
 export default function App() {
-  // Estado de locales obtenidos desde Supabase (respaldo localesData)
-  const [locales, setLocales] = useState(localesData);
-
-  // Cargar locales desde Supabase
-  useEffect(() => {
-    async function fetchLocales() {
-      try {
-        const { data, error } = await supabase
-          .from("locales")
-          .select("*")
-          .eq("activo", true)
-          .order("id", { ascending: true });
-
-        if (error) {
-          console.warn("No se pudieron cargar locales de Supabase, usando respaldo:", error.message);
-        } else if (data && data.length > 0) {
-          setLocales(data);
-        }
-      } catch (err) {
-        console.warn("Error de conexión con Supabase:", err);
-      }
-    }
-
-    fetchLocales();
-  }, []);
+  // Locales cargados directamente desde el archivo JSON de datos
+  const [locales] = useState(localesData);
 
   // Estado de búsqueda y categorías
   const [searchTerm, setSearchTerm] = useState("");

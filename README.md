@@ -13,7 +13,7 @@ Aplicación web responsiva diseñada bajo el enfoque *mobile-first*, que permite
 
 ### Requisitos Previos (Node.js)
 
-- **Node.js**: Versión v18.0.0 o superior (Recomendado: v22.x LTS o superior).
+- **Node.js**: Versión v20.0.0 o superior (Recomendado: v24.x LTS o superior).
 - **Git**
 
 ### Instalar dependencias (en caso de no usar Docker)
@@ -59,9 +59,6 @@ cd Junamap
 npm install
 ```
 	
-2. **Configurar variables de entorno:**
-   - Copia o renombra `.env.example` a `.env`
-   - Solicita las credenciales de Supabase al grupo y pégalas en `.env`.
 
 3. **Levantar el servidor de desarrollo:**
 ```bash
