@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import localesData from "./data/locales.json";
+import { getLocales, postularLocal, getLocalesPendientes, moderarLocal } from "./services/localService";
 import { crearPinIcon } from "./utils/pinIcons";
 import "./App.css";
 
@@ -148,8 +149,23 @@ function MapController({ onMapClick, activeLocal, userCoords, gpsFlyCount }) {
 }
 
 export default function App() {
-  // Locales cargados directamente desde el archivo JSON de datos
-  const [locales] = useState(localesData);
+  // Locales cargados desde Supabase (con fallback a localesData)
+  const [locales, setLocales] = useState(localesData);
+  const [isSubmittingRegister, setIsSubmittingRegister] = useState(false);
+  const [registerError, setRegisterError] = useState("");
+
+  // Carga asíncrona de locales verificados desde Supabase (PBI-06 / AC-10)
+  useEffect(() => {
+    let isMounted = true;
+    getLocales().then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setLocales(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Estado de búsqueda y categorías
   const [searchTerm, setSearchTerm] = useState("");
@@ -172,6 +188,13 @@ export default function App() {
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
   const [suggestSuccessView, setSuggestSuccessView] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+
+  // Estados de Panel de Administración / Moderación (PBI-05 / AC-09)
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminPass, setAdminPass] = useState("");
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [localesPendientes, setLocalesPendientes] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
   const [suggestItems, setSuggestItems] = useState([
     { id: 1, nombre: "", direccion: "", tipo: "Almuerzo" }
   ]);
@@ -484,16 +507,72 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isAboutModalOpen, isRegisterModalOpen, isSuggestModalOpen, isDrawerOpen]);
 
-  // Enviar formulario "Registrar mi local"
-  const handleRegisterSubmit = (e) => {
+  // Enviar formulario "Registrar mi local" a Supabase (PBI-04 / AC-08)
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    setRegisterSuccessView(true);
+    setRegisterError("");
+    setIsSubmittingRegister(true);
+
+    const form = e.target;
+    const formData = {
+      nombre: form["reg-nombre"].value,
+      tipo: form["reg-categoria"].value,
+      direccion: form["reg-direccion"].value,
+      abre: form["reg-abre"].value || "09:00",
+      cierra: form["reg-cierra"].value || "20:00",
+      telefono: form["reg-telefono"].value || null,
+      descripcion: `Contacto: ${form["reg-email"].value}. Postulación desde la web.`,
+      lat: userCoords.lat, // Georreferenciado a la posición en Talca
+      lng: userCoords.lng,
+      metodo_cobro: "Edenred POS"
+    };
+
+    try {
+      await postularLocal(formData);
+      setIsSubmittingRegister(false);
+      setRegisterSuccessView(true);
+    } catch (err) {
+      console.error("Error al enviar postulación:", err);
+      setIsSubmittingRegister(false);
+      setRegisterError(err.message || "No se pudo enviar la solicitud. Intenta nuevamente.");
+    }
   };
 
   // Enviar formulario "Sugerencia"
   const handleSuggestSubmit = (e) => {
     e.preventDefault();
     setSuggestSuccessView(true);
+  };
+
+  // Cargar locales pendientes de moderación
+  const cargarPendientes = async () => {
+    setAdminLoading(true);
+    const data = await getLocalesPendientes();
+    setLocalesPendientes(data);
+    setAdminLoading(false);
+  };
+
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (adminPass === "admin123" || adminPass === "junamap2026") {
+      setIsAdminAuthenticated(true);
+      cargarPendientes();
+    } else {
+      alert("Contraseña de administrador incorrecta");
+    }
+  };
+
+  const handleModerar = async (id, accion) => {
+    try {
+      await moderarLocal(id, accion);
+      alert(accion ? "Local aprobado y publicado exitosamente en el mapa." : "Local rechazado.");
+      cargarPendientes();
+      // Refrescar mapa
+      const actualizados = await getLocales();
+      setLocales(actualizados);
+    } catch (err) {
+      alert("Error al moderar local: " + err.message);
+    }
   };
 
   // Posición dinámica del FAB
@@ -974,6 +1053,30 @@ export default function App() {
             </div>
           </div>
 
+          {/* ACCESO A PANEL DE MODERACIÓN (PBI-05 / AC-09) */}
+          <div style={{ marginTop: "1.5rem", padding: "0 0.5rem" }}>
+            <button
+              type="button"
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                borderRadius: "8px",
+                border: "1px dashed #257ce6",
+                background: "#f0f7ff",
+                color: "#257ce6",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                cursor: "pointer"
+              }}
+              onClick={() => {
+                setIsDrawerOpen(false);
+                setIsAdminModalOpen(true);
+              }}
+            >
+              🛡️ Panel de Moderación (Admin)
+            </button>
+          </div>
+
           <hr className="drawer-divider" />
 
           {/* SECCIÓN AYUDA */}
@@ -1122,18 +1225,24 @@ export default function App() {
                   </label>
                 </div>
 
-                <button type="submit" className="btn-submit-form">
-                  Enviar solicitud · Próximamente
+                {registerError && (
+                  <p style={{ color: "#d8502c", fontSize: "0.85rem", marginBottom: "1rem" }}>
+                    {registerError}
+                  </p>
+                )}
+
+                <button type="submit" className="btn-submit-form" disabled={isSubmittingRegister}>
+                  {isSubmittingRegister ? "Enviando solicitud..." : "Enviar solicitud de verificación"}
                 </button>
               </form>
             </div>
           ) : (
             <div id="modal-success-view">
               <div className="form-placeholder-state">
-                <div className="icon">🚧</div>
-                <h3>Próximamente</h3>
+                <div className="icon">✅</div>
+                <h3>¡Solicitud Enviada!</h3>
                 <p>
-                  El registro de locales aún no está disponible. Pronto podrás enviar tu solicitud desde aquí.
+                  Tu postulación ha sido registrada con éxito en estado <strong>Pendiente de Verificación</strong>. Nuestro equipo la revisará antes de publicarla en el mapa.
                 </p>
                 <button
                   type="button"
@@ -1147,6 +1256,159 @@ export default function App() {
                   Volver al mapa
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* MODAL / PANEL DE MODERACIÓN ADMIN (PBI-05 / AC-09) */}
+      <section
+        className={`modal-form-page ${isAdminModalOpen ? "open" : ""}`}
+        id="admin-modal"
+        aria-label="Panel de Administración"
+        inert={!isAdminModalOpen}
+      >
+        <div className="modal-header">
+          <button
+            className="ib-close"
+            onClick={() => {
+              setIsAdminModalOpen(false);
+              setIsAdminAuthenticated(false);
+              setAdminPass("");
+            }}
+          >
+            &times;
+          </button>
+          <div className="modal-title-wrap">
+            <span className="modal-badge-tag">ADMINISTRACIÓN</span>
+            <h2 className="modal-title">Panel de Moderación</h2>
+          </div>
+        </div>
+
+        <div className="modal-body-scroll" style={{ padding: "1.5rem" }}>
+          {!isAdminAuthenticated ? (
+            <form onSubmit={handleAdminLogin} style={{ maxWidth: "320px", margin: "2rem auto", textAlign: "center" }}>
+              <p style={{ marginBottom: "1rem", color: "#666" }}>
+                Ingresa la clave de administrador para moderar las postulaciones de locales.
+              </p>
+              <input
+                type="password"
+                placeholder="Clave (ej: admin123)"
+                value={adminPass}
+                onChange={(e) => setAdminPass(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  border: "1px solid #ccc",
+                  marginBottom: "1rem",
+                  fontSize: "1rem"
+                }}
+                required
+              />
+              <button
+                type="submit"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: "#1e293b",
+                  color: "#fff",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                Ingresar al Panel
+              </button>
+            </form>
+          ) : (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                <h3 style={{ margin: 0, fontSize: "1.1rem" }}>Locales Pendientes de Verificación ({localesPendientes.length})</h3>
+                <button
+                  type="button"
+                  onClick={cargarPendientes}
+                  style={{ padding: "0.4rem 0.8rem", borderRadius: "6px", border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}
+                >
+                  🔄 Actualizar
+                </button>
+              </div>
+
+              {adminLoading ? (
+                <p>Cargando postulaciones...</p>
+              ) : localesPendientes.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#666" }}>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🎉</div>
+                  <p>No hay locales pendientes por moderar en este momento.</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {localesPendientes.map((p) => (
+                    <div
+                      key={p.id}
+                      style={{
+                        padding: "1rem",
+                        borderRadius: "10px",
+                        border: "1px solid #e2e8f0",
+                        background: "#f8fafc"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                        <strong style={{ fontSize: "1.05rem" }}>{p.nombre}</strong>
+                        <span style={{ fontSize: "0.8rem", background: "#e2e8f0", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
+                          {p.tipo}
+                        </span>
+                      </div>
+                      <p style={{ margin: "0.2rem 0", fontSize: "0.9rem", color: "#475569" }}>
+                        📍 {p.direccion}
+                      </p>
+                      <p style={{ margin: "0.2rem 0", fontSize: "0.85rem", color: "#64748b" }}>
+                        ⏰ Horario: {p.abre || "Sin horario"} - {p.cierra || "Sin horario"}
+                      </p>
+                      {p.descripcion && (
+                        <p style={{ margin: "0.4rem 0", fontSize: "0.85rem", fontStyle: "italic", color: "#475569" }}>
+                          "{p.descripcion}"
+                        </p>
+                      )}
+
+                      <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => handleModerar(p.id, true)}
+                          style={{
+                            flex: 1,
+                            padding: "0.6rem",
+                            borderRadius: "6px",
+                            border: "none",
+                            background: "#16a34a",
+                            color: "#fff",
+                            fontWeight: 600,
+                            cursor: "pointer"
+                          }}
+                        >
+                          ✅ Aprobar y Publicar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleModerar(p.id, false)}
+                          style={{
+                            padding: "0.6rem 1rem",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            background: "#fff",
+                            color: "#dc2626",
+                            fontWeight: 600,
+                            cursor: "pointer"
+                          }}
+                        >
+                          ❌ Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
