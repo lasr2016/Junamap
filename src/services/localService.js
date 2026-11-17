@@ -172,18 +172,18 @@ export async function moderarLocal(id, accionAprobar, customCoords = null) {
   }
 
   // Registrar auditoría en verificar_locales si existe
-  try {
-    await supabase.from("verificar_locales").insert([
-      {
-        local_id: id,
-        estado_anterior: "pendiente",
-        estado_nuevo: accionAprobar ? "verificado" : "rechazado",
-        admin_nombre: "Admin Principal JunaMap",
-        fecha: new Date().toISOString()
-      }
-    ]);
-  } catch (auditErr) {
-    console.warn("No se pudo registrar log en verificar_locales:", auditErr);
+  const { error: auditError } = await supabase.from("verificar_locales").insert([
+    {
+      local_id: id,
+      estado_anterior: "pendiente",
+      estado_nuevo: accionAprobar ? "verificado" : "rechazado",
+      admin_nombre: "Admin Principal JunaMap",
+      fecha: new Date().toISOString()
+    }
+  ]);
+
+  if (auditError) {
+    console.error("Error al insertar en verificar_locales:", auditError);
   }
 
   return data;

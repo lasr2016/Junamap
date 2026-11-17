@@ -85,3 +85,12 @@ npm run dev -- --host
 - Abre esa dirección en el navegador web de tu celular.
     
 - Si aparece la advertencia _"La conexión no es privada"_ (debido al certificado autofirmado para SSL local), pulsa en **Configuración avanzada** y selecciona **Acceder a la dirección (no seguro)** para permitir el uso del GPS.
+
+### 🔑 Variables de Entorno y Seguridad
+Para ejecutar la aplicación localmente o en entornos de evaluación:
+1. Copie el archivo `.env.example` a `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+> **Nota de Seguridad y Buenas Prácticas:**  
+> Las credenciales provistas corresponden a la `anon-key` pública de Supabase, requerida por el cliente frontend. La seguridad del sistema **no depende de ocultar esta clave pública**, sino del esquema de **Row Level Security (RLS)** implementado en PostgreSQL (ver script `sql/esquema_incremento_2.sql`), el cual impide modificaciones o accesos no autorizados a nivel de base de datos.
