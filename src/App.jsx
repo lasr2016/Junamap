@@ -195,6 +195,7 @@ export default function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [localesPendientes, setLocalesPendientes] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [coordsEdit, setCoordsEdit] = useState({});
   const [suggestItems, setSuggestItems] = useState([
     { id: 1, nombre: "", direccion: "", tipo: "Almuerzo" }
   ]);
@@ -564,8 +565,15 @@ export default function App() {
 
   const handleModerar = async (id, accion) => {
     try {
-      await moderarLocal(id, accion);
-      alert(accion ? "Local aprobado y publicado exitosamente en el mapa." : "Local rechazado.");
+      const customCoords = coordsEdit[id]
+        ? {
+            lat: parseFloat(coordsEdit[id].lat),
+            lng: parseFloat(coordsEdit[id].lng)
+          }
+        : null;
+
+      await moderarLocal(id, accion, customCoords);
+      alert(accion ? "Local aprobado, georreferenciado y publicado con éxito." : "Local rechazado.");
       cargarPendientes();
       // Refrescar mapa
       const actualizados = await getLocales();
@@ -1371,6 +1379,47 @@ export default function App() {
                           "{p.descripcion}"
                         </p>
                       )}
+
+                      {/* AJUSTE MANUAL DE COORDENADAS PARA EL PIN EXACTO */}
+                      <div style={{ marginTop: "0.8rem", padding: "0.6rem", background: "#f1f5f9", borderRadius: "6px" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#334155" }}>
+                          🎯 Ajuste exacto de pin (Latitud / Longitud):
+                        </span>
+                        <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.4rem" }}>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="Latitud"
+                            defaultValue={p.latitud || p.lat}
+                            onChange={(e) =>
+                              setCoordsEdit((prev) => ({
+                                ...prev,
+                                [p.id]: {
+                                  lat: e.target.value,
+                                  lng: prev[p.id]?.lng ?? (p.longitud || p.lng)
+                                }
+                              }))
+                            }
+                            style={{ flex: 1, padding: "0.4rem", fontSize: "0.8rem", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                          />
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="Longitud"
+                            defaultValue={p.longitud || p.lng}
+                            onChange={(e) =>
+                              setCoordsEdit((prev) => ({
+                                ...prev,
+                                [p.id]: {
+                                  lat: prev[p.id]?.lat ?? (p.latitud || p.lat),
+                                  lng: e.target.value
+                                }
+                              }))
+                            }
+                            style={{ flex: 1, padding: "0.4rem", fontSize: "0.8rem", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                          />
+                        </div>
+                      </div>
 
                       <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
                         <button
