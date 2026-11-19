@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { sanitizeInput } from "../services/localService";
 
 // Función Haversine idéntica a la usada en App.jsx
 function calcDist(lat1, lon1, lat2, lon2) {
@@ -97,5 +98,25 @@ describe("Suite de Regresión del Incremento 1 (Protección Sección 10)", () =>
 
     expect(resultados.length).toBe(1);
     expect(resultados[0].id).toBe(1);
+  });
+
+  it("REG-05 / QA-08: Sanitización de entradas elimina payloads XSS (<script>) en postulaciones y reportes", () => {
+    const payload = "<script>alert(1)</script>Casino Central";
+    const limpio = sanitizeInput(payload);
+
+    expect(limpio).not.toContain("<script>");
+    expect(limpio).toBe("alert(1)Casino Central");
+  });
+
+  it("REG-06 / DA-02: Filtrado de favoritos en Modo Invitado conserva solo IDs guardados localmente", () => {
+    const catalogoPiloto = [
+      { id: 1, nombre: "Fuente Ñuble", tipo: "Almuerzo", direccion: "3 Oriente", productos: ["Completos"] },
+      { id: 2, nombre: "Café Central", tipo: "Cafetería", direccion: "1 Sur", productos: ["Café"] }
+    ];
+    const favIds = [2];
+    const favoritos = catalogoPiloto.filter((l) => favIds.includes(l.id));
+
+    expect(favoritos.length).toBe(1);
+    expect(favoritos[0].nombre).toBe("Café Central");
   });
 });

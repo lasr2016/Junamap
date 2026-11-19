@@ -1568,3 +1568,435 @@ body,
   color: var(--text);
   margin: 0;
 }
+
+/* ==================================================================
+   Mejoras Evaluación Final: Modo Invitado, Favoritos, Reportes y Admin
+   ================================================================== */
+
+.fallback-banner {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 115px);
+  left: 12px;
+  right: 12px;
+  z-index: 8;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.fallback-banner button {
+  background: transparent;
+  border: 0;
+  color: #92400e;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.guest-badge-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.guest-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand);
+  background: rgba(29, 107, 63, 0.12);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.fav-btn,
+.fav-list-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  flex: none;
+}
+
+.fav-btn:hover,
+.fav-list-btn:hover {
+  transform: scale(1.1);
+}
+
+.fav-btn.active,
+.fav-list-btn.active {
+  background: rgba(225, 29, 72, 0.12);
+  border-color: rgba(225, 29, 72, 0.35);
+}
+
+.btn-report-inline {
+  height: 46px;
+  border-radius: 23px;
+  border: 1.5px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-report-inline:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.drawer-admin-access-btn {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px dashed #257ce6;
+  background: rgba(37, 124, 230, 0.08);
+  color: #257ce6;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.drawer-admin-access-btn:hover {
+  background: rgba(37, 124, 230, 0.14);
+}
+
+.drawer-admin-access-btn small {
+  font-size: 11px;
+  opacity: 0.85;
+  font-weight: 600;
+}
+
+.form-group input[type="number"],
+.form-group input[type="password"] {
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  padding: 0 14px;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+}
+
+.form-textarea {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+}
+
+.form-textarea:focus {
+  border-color: var(--brand);
+}
+
+.form-error-box {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.form-success-box {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.btn-link-subtle {
+  background: none;
+  border: 0;
+  color: var(--brand);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 6px;
+}
+
+.admin-auth-card {
+  max-width: 400px;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.admin-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.admin-action-pill {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-action-pill.danger {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  overflow-x: auto;
+}
+
+.admin-tab-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-tab-btn.active {
+  background: var(--brand);
+  color: #ffffff;
+  border-color: var(--brand);
+}
+
+.admin-item-card {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.admin-badge {
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.admin-coords-box {
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.admin-coord-input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.admin-btn-approve {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: #16a34a;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-btn-reject {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: var(--surface);
+  color: #dc2626;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-empty-box {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--muted);
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+}
+
+/* Geocodificación Asistida (Mini-Mapa Interactivo en Formularios y Panel Admin) */
+.geo-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-geo-use-current {
+  appearance: none;
+  border: 1px solid var(--brand);
+  background: rgba(29, 107, 63, 0.08);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-geo-use-current:hover {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.geo-picker-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.geo-picker-container {
+  position: relative;
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+  border: 1.5px solid var(--line);
+  border-bottom: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: height 0.12s ease;
+}
+
+.geo-picker-expand-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 450;
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(27, 42, 33, 0.88);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.geo-picker-expand-btn:hover {
+  background: var(--brand);
+  transform: scale(1.03);
+}
+
+.geo-picker-resizer {
+  height: 26px;
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.geo-picker-resizer:hover,
+.geo-picker-resizer:active {
+  background: rgba(29, 107, 63, 0.1);
+  color: var(--brand);
+}
+
+.geo-picker-resizer-bar {
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.geo-picker-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 400;
+  background: rgba(27, 42, 33, 0.84);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 8px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+

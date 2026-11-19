@@ -1,0 +1,34 @@
+name: CI - Regresión y Build (JunaMap)
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Build, Linter & Vitest Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar análisis estático (ESLint)
+        run: npm run lint
+
+      - name: Ejecutar suite de regresión (Vitest)
+        run: npm test
+
+      - name: Compilar versión candidata (Vite Build)
+        run: npm run build
