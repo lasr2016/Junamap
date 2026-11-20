@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
+import { Flag, Heart, Info } from "lucide-react";
 import localesData from "./data/locales.json";
+import GestionarLocales from "./GestionarLocales";
 import {
   supabase,
+  ADMIN_OFFICIAL_EMAIL,
   getLocales,
   getLocalesWithStatus,
   postularLocal,
@@ -30,6 +33,16 @@ const CATS = {
 };
 
 const CAT_ORDER = Object.keys(CATS);
+const DESCRIPCION_SUGERENCIA = "Sugerencia enviada por estudiante de la comunidad JunaMap.";
+
+function MapAttribution() {
+  return (
+    <a className="map-attribution" href="https://www.openstreetmap.org/copyright"
+      target="_blank" rel="noopener noreferrer">
+      © OpenStreetMap contributors
+    </a>
+  );
+}
 
 // Lista de productos para búsqueda
 const PRODUCT_LIST = [
@@ -253,13 +266,16 @@ function LocationPickerMap({ lat, lng, categoria = "Almuerzo", onChange, isVisib
   return (
     <div className="geo-picker-wrapper">
       <div className="geo-picker-container" style={{ height: `${mapHeight}px` }}>
+        <div className="geo-picker-attribution">
+          <MapAttribution />
+        </div>
         <button
           type="button"
           className="geo-picker-expand-btn"
           onClick={toggleExpand}
           title={isExpanded ? "Reducir altura del mapa" : "Agrandar mapa hacia abajo"}
         >
-          {isExpanded ? "🗕 Achicar mapa" : "🗖 Agrandar mapa"}
+          {isExpanded ? "Achicar mapa" : "Agrandar mapa"}
         </button>
 
         <MapContainer
@@ -271,7 +287,7 @@ function LocationPickerMap({ lat, lng, categoria = "Almuerzo", onChange, isVisib
         >
           <TileLayer
             maxZoom={19}
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <Marker
             position={[safeLat, safeLng]}
@@ -350,9 +366,7 @@ export default function App() {
     let isMounted = true;
     getLocalesWithStatus().then(({ data, isFallback }) => {
       if (isMounted) {
-        if (data && data.length > 0) {
-          setLocales(data);
-        }
+        setLocales(data);
         setIsFallbackMode(Boolean(isFallback));
       }
     });
@@ -404,10 +418,13 @@ export default function App() {
   // Detectar evento PASSWORD_RECOVERY de Supabase Auth
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (!session && event === "SIGNED_OUT") {
+        setIsAdminAuthenticated(false);
+      }
+      if (event === "PASSWORD_RECOVERY" && session?.user?.email?.toLowerCase() === ADMIN_OFFICIAL_EMAIL) {
         setIsAdminModalOpen(true);
         setIsAdminAuthenticated(true);
-        setAdminEmail(session?.user?.email || "webjunamap@gmail.com");
+        setAdminEmail(session.user.email);
         setAdminAuthView("change_password");
       }
     });
@@ -502,8 +519,6 @@ export default function App() {
   // Estados del Bottom Sheet (0: Peek 62px, 1: 50% mitad, 2: 80% máximo)
   const [sheetState, setSheetState] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [appHeight, setAppHeight] = useState(window.innerHeight);
 
   // Filtros activos: categoría distinta a 'Todos', comida seleccionada o modo favoritos
@@ -523,10 +538,10 @@ export default function App() {
   };
 
   const sheetRef = useRef(null);
+  const sheetFabRef = useRef(null);
   const bodyRef = useRef(null);
-  const dragStartY = useRef(null);
-  const dragStartOffset = useRef(0);
-  const hasMoved = useRef(false);
+  const sheetDrag = useRef(null);
+  const dragFrame = useRef(null);
   const tooltipTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -560,9 +575,11 @@ export default function App() {
     return [62, Math.round(appHeight * 0.5), Math.round(appHeight * 0.8)];
   }, [appHeight]);
 
-  const currentOffset = isDragging
-    ? dragOffset
-    : snapHeights[2] - snapHeights[sheetState];
+  const currentOffset = snapHeights[2] - snapHeights[sheetState];
+
+  useEffect(() => () => {
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -656,7 +673,7 @@ export default function App() {
           .replace(/[\u0300-\u036f]/g, "")
           .trim();
 
-        const matchesProduct = selectedProduct
+        const matchesProduct = !onlyFavorites && selectedProduct
           ? Array.isArray(l.productos) && l.productos.includes(selectedProduct)
           : true;
         const matchesSearch = searchTarget.includes(normalizedSearch);
@@ -693,33 +710,57 @@ export default function App() {
 
   // Drag del Bottom Sheet
   const handlePointerDown = (e) => {
-    dragStartY.current = e.clientY;
-    dragStartOffset.current = currentOffset;
-    hasMoved.current = false;
-    setIsDragging(true);
-    setDragOffset(currentOffset);
+    if (e.button !== 0 || sheetDrag.current) return;
+    sheetDrag.current = { id: e.pointerId, startY: e.clientY, startOffset: currentOffset, offset: currentOffset, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e) => {
-    if (dragStartY.current === null) return;
-    hasMoved.current = true;
-    const dy = e.clientY - dragStartY.current;
+    const drag = sheetDrag.current;
+    if (drag?.id !== e.pointerId) return;
+    const dy = e.clientY - drag.startY;
+    if (!drag.moved) {
+      if (Math.abs(dy) < 4) return;
+      const transform = getComputedStyle(sheetRef.current).transform;
+      if (transform !== "none") drag.startOffset = new DOMMatrixReadOnly(transform).m42;
+      drag.moved = true;
+    }
     const maxOffset = snapHeights[2] - snapHeights[0];
-    const newOffset = Math.max(0, Math.min(maxOffset, dragStartOffset.current + dy));
-    setDragOffset(newOffset);
+    drag.offset = Math.max(0, Math.min(maxOffset, drag.startOffset + dy));
+    if (dragFrame.current !== null) return;
+
+    dragFrame.current = requestAnimationFrame(() => {
+      dragFrame.current = null;
+      const sheet = sheetRef.current;
+      const fab = sheetFabRef.current;
+      sheet.classList.add("drag");
+      fab.classList.add("drag");
+      sheet.style.setProperty("--drag-offset", `${drag.offset}px`);
+      fab.style.setProperty("--drag-offset", `${-Math.min(snapHeights[2] - drag.offset, snapHeights[1])}px`);
+    });
   };
 
-  const handlePointerUp = (e) => {
-    if (dragStartY.current === null) return;
-    setIsDragging(false);
-    e.currentTarget.releasePointerCapture(e.pointerId);
+  const finishSheetDrag = (e, cancelled = false) => {
+    const drag = sheetDrag.current;
+    if (drag?.id !== e.pointerId) return;
+    sheetDrag.current = null;
+    if (dragFrame.current !== null) {
+      cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = null;
+    }
+    for (const element of [sheetRef.current, sheetFabRef.current]) {
+      element.classList.remove("drag");
+      element.style.removeProperty("--drag-offset");
+    }
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    if (cancelled) return;
 
-    const maxH = snapHeights[2];
-    const currentVisH = maxH - dragOffset;
+    const currentVisH = snapHeights[2] - drag.offset;
 
     let targetState;
-    if (hasMoved.current) {
+    if (drag.moved) {
       targetState = snapHeights.reduce(
         (bestIdx, h, idx) =>
           Math.abs(h - currentVisH) < Math.abs(snapHeights[bestIdx] - currentVisH)
@@ -731,7 +772,7 @@ export default function App() {
       targetState = sheetState === 2 ? 0 : (sheetState + 1) % 3;
     }
 
-    dragStartY.current = null;
+    if (targetState === 0) setActiveLocalId(null);
     setSheetState(targetState);
   };
 
@@ -847,7 +888,7 @@ export default function App() {
           lng: -71.6557,
           abre: "09:00",
           cierra: "20:00",
-          descripcion: "Sugerencia enviada por estudiante de la comunidad JunaMap.",
+          descripcion: DESCRIPCION_SUGERENCIA,
           productos: ["Almuerzo casero"]
         });
       }
@@ -886,7 +927,10 @@ export default function App() {
     try {
       const [pendientesData, reportesData, historialData] = await Promise.all([
         getLocalesPendientes(),
-        getReportesLocales(),
+        getReportesLocales().catch((err) => {
+          setAdminAuthError("No se pudieron cargar los reportes: " + err.message);
+          return [];
+        }),
         getHistorialModeracion()
       ]);
       setLocalesPendientes(pendientesData);
@@ -989,8 +1033,15 @@ export default function App() {
       await resolverReporteLocal(id, estado);
       await cargarDatosAdmin();
     } catch (err) {
-      console.error("Error al actualizar reporte:", err);
+      setAdminAuthError("No se pudo actualizar el reporte: " + err.message);
     }
+  };
+
+  const handleLocalPublicadoChanged = (id, cambios) => {
+    setLocales((actuales) => cambios
+      ? actuales.map((local) => local.id === id ? { ...local, ...cambios } : local)
+      : actuales.filter((local) => local.id !== id));
+    if (!cambios) getHistorialModeracion().then(setHistorialAuditoria);
   };
 
   const handlePurgarDatosPrueba = async () => {
@@ -1009,7 +1060,7 @@ export default function App() {
 
   // Posición dinámica del FAB
   const visibleSheetH = snapHeights[2] - currentOffset;
-  const fabBottom = Math.min(visibleSheetH, snapHeights[1]) + 14;
+  const fabOffset = -Math.min(visibleSheetH, snapHeights[1]);
 
   return (
     <div id="app">
@@ -1036,7 +1087,7 @@ export default function App() {
         >
           <TileLayer
             maxZoom={19}
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             updateWhenZooming={false}
             updateInterval={100}
             keepBuffer={4}
@@ -1080,6 +1131,9 @@ export default function App() {
 
       {/* CONTROLES SUPERIORES */}
       <div className="top">
+        <div className="map-attribution-row">
+          <MapAttribution />
+        </div>
         {/* Barra de búsqueda */}
         <div className="search">
           <button
@@ -1160,7 +1214,7 @@ export default function App() {
       </div>
 
       {/* BOTÓN UBICACIÓN (FAB) Y TOOLTIP */}
-      <div className="fab-wrapper" style={{ bottom: `${fabBottom}px` }}>
+      <div className="fab-wrapper" ref={sheetFabRef} style={{ "--snap-offset": `${fabOffset}px` }}>
         <div
           className={`loc-tooltip ${showLocTooltip ? "show" : ""}`}
           id="loc-tooltip"
@@ -1198,12 +1252,13 @@ export default function App() {
 
       {/* BOTTOM SHEET */}
       <section
-        className={`sheet ${isDragging ? "drag" : ""}`}
+        className="sheet"
         id="sheet"
         ref={sheetRef}
         style={{
           height: `${snapHeights[2]}px`,
-          transform: `translateY(${currentOffset}px)`
+          "--snap-offset": `${currentOffset}px`,
+          "--sheet-body-height": `${Math.max(0, visibleSheetH - snapHeights[0])}px`
         }}
         aria-live="polite"
       >
@@ -1213,7 +1268,9 @@ export default function App() {
           id="grab"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
+          onPointerUp={finishSheetDrag}
+          onPointerCancel={(e) => finishSheetDrag(e, true)}
+          onLostPointerCapture={(e) => finishSheetDrag(e, true)}
         >
           <b />
           <p className="grab-instruction">{instructionText}</p>
@@ -1224,9 +1281,6 @@ export default function App() {
           className="body"
           id="body"
           ref={bodyRef}
-          style={{
-            maxHeight: `${Math.max(0, visibleSheetH - snapHeights[0])}px`
-          }}
         >
           {/* Tarjeta del Local Activo */}
           {activeLocal && (
@@ -1249,10 +1303,11 @@ export default function App() {
                     type="button"
                     className={`fav-btn ${favoriteIds.includes(activeLocal.id) ? "active" : ""}`}
                     aria-label="Guardar en favoritos"
+                    aria-pressed={favoriteIds.includes(activeLocal.id)}
                     title="Guardar en tus favoritos locales"
                     onClick={(e) => toggleFavorite(activeLocal.id, e)}
                   >
-                    {favoriteIds.includes(activeLocal.id) ? "❤️" : "🤍"}
+                    <Heart className="fav-heart" size={17} aria-hidden="true" />
                   </button>
                   <span className={`tag ${isLocalOpen(activeLocal) ? "o" : "c"}`}>
                     {isLocalOpen(activeLocal) ? "Abierto" : "Cerrado"}
@@ -1347,7 +1402,7 @@ export default function App() {
                 </button>
               </div>
             )}
-            <div className="products-grid-rows">
+            {!onlyFavorites && <div className="products-grid-rows">
               {[
                 PRODUCT_LIST.slice(0, 8),
                 PRODUCT_LIST.slice(8, 16),
@@ -1376,18 +1431,24 @@ export default function App() {
                 </div>
               ))}
             </div>
+            }
           </div>
 
           {/* Subtítulo de orden */}
           {visibleLocales.length > 0 && (
             <div className="sub">
-              {onlyFavorites
+              <span>{onlyFavorites
                 ? `Tus locales favoritos guardados (${visibleLocales.length})`
                 : selectedProduct
                   ? `Locales con ${selectedProduct} (${visibleLocales.length})`
                   : gpsActive
                     ? "Ordenados por cercanía"
-                    : "Ordenados por categoría"}
+                    : "Ordenados por categoría"}</span>
+              {!gpsActive && (
+                <button type="button" className="sub-gps" onClick={() => activarUbicacion()}>
+                  Activa tu ubicación para ver distancias
+                </button>
+              )}
             </div>
           )}
 
@@ -1395,13 +1456,13 @@ export default function App() {
           {visibleLocales.length === 0 && (
             <div className="empty">
               {onlyFavorites
-                ? "Aún no has guardado locales favoritos. Toca el corazón 🤍 en cualquier comercio para guardarlo en tu dispositivo."
+                ? "Aún no has guardado locales favoritos. Toca el corazón en cualquier comercio para guardarlo en tu dispositivo."
                 : "No se encuentran locales con esos criterios"}
             </div>
           )}
 
           {/* Lista de locales */}
-          {visibleLocales.map((local, idx) => {
+          {visibleLocales.map((local) => {
             const isFav = favoriteIds.includes(local.id);
             return (
               <div
@@ -1418,31 +1479,17 @@ export default function App() {
                   </small>
                 </div>
 
+                {gpsActive && <span className="d">{distStr(local.d, gpsActive)}</span>}
                 <button
                   type="button"
                   className={`fav-list-btn ${isFav ? "active" : ""}`}
                   aria-label="Marcar favorito"
+                  aria-pressed={isFav}
                   onClick={(e) => toggleFavorite(local.id, e)}
                 >
-                  {isFav ? "❤️" : "🤍"}
+                  <Heart className="fav-heart" size={17} aria-hidden="true" />
                 </button>
 
-                {gpsActive ? (
-                  <span className="d">{distStr(local.d, gpsActive)}</span>
-                ) : idx === 0 ? (
-                  <button
-                    type="button"
-                    className="d d-gps"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      activarUbicacion();
-                    }}
-                  >
-                    Activa tu ubicación para ver distancias
-                  </button>
-                ) : (
-                  <span className="d" />
-                )}
               </div>
             );
           })}
@@ -1489,7 +1536,7 @@ export default function App() {
             </div>
             <h3 className="drawer-greeting">Hola, Estudiante 👋</h3>
             <p className="drawer-auth-subtext">
-              Explora comercios BAES sin entregar datos personales. Tus favoritos y tu GPS se procesan solo en este dispositivo.
+              Explora comercios BAES sin entregar datos personales. Tus favoritos y tu GPS se procesan solo en tu dispositivo.
             </p>
             <div className="drawer-auth-buttons">
               <button
@@ -1513,7 +1560,7 @@ export default function App() {
           {/* TARJETA ¿FALTA UN LOCAL EN EL MAPA? */}
           <div className="drawer-merchant-card">
             <h4 className="drawer-merchant-title">¿Falta un local en el mapa?</h4>
-            <p className="drawer-merchant-desc">Postúlalo para verificación comunitaria</p>
+            <p className="drawer-merchant-desc">Postúlalo y lo verificamos entre todos</p>
             <div className="drawer-missing-options">
               <button
                 type="button"
@@ -1572,7 +1619,10 @@ export default function App() {
             className="drawer-item simple"
             onClick={() => openReportModalForLocal(activeLocal?.id || "")}
           >
-            <span>⚑ Reportar un error o local</span>
+            <span className="drawer-help-label">
+              <Flag size={15} aria-hidden="true" />
+              Reportar un error o local
+            </span>
           </div>
 
           <div
@@ -1582,22 +1632,15 @@ export default function App() {
               setIsAboutModalOpen(true);
             }}
           >
-            <span>ℹ️ Acerca de JunaMap</span>
+            <span className="drawer-help-label">
+              <Info size={15} aria-hidden="true" />
+              Acerca de JunaMap
+            </span>
           </div>
         </div>
 
         <div className="drawer-footer">
-          <p>
-            Catálogo Comunitario Verificado ·{" "}
-            <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">
-              Leaflet
-            </a>{" "}
-            +{" "}
-            <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">
-              OpenStreetMap
-            </a>{" "}
-            · UCM — Taller de Desarrollo de Software
-          </p>
+          <p><strong>Catálogo comunitario de locales BAES</strong></p>
         </div>
       </aside>
 
@@ -1680,11 +1723,11 @@ export default function App() {
                 </div>
 
                 {/* GEOCODIFICACIÓN ASISTIDA: MINI-MAPA INTERACTIVO + OPCIÓN MANUAL SINCRONIZADA */}
-                <div className="form-group">
+                <div className="form-group" role="group" aria-labelledby="reg-ubicacion-titulo">
                   <div className="geo-picker-header">
-                    <label style={{ margin: 0 }}>
+                    <span id="reg-ubicacion-titulo" className="form-group-title" style={{ margin: 0 }}>
                       Ubicación del local en el mapa <span className="req">*</span>
-                    </label>
+                    </span>
                     <button
                       type="button"
                       className="btn-geo-use-current"
@@ -1755,8 +1798,8 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Productos principales disponibles con BAES</label>
+                <div className="form-group" role="group" aria-labelledby="reg-productos-titulo">
+                  <span id="reg-productos-titulo" className="form-group-title">Productos principales disponibles con BAES</span>
                   <div className="suggest-chips-grid" style={{ justifyContent: "flex-start" }}>
                     {PRODUCT_LIST.slice(0, 12).map((prod) => {
                       const active = selectedRegisterProducts.includes(prod);
@@ -2131,6 +2174,13 @@ export default function App() {
               <div className="admin-tabs">
                 <button
                   type="button"
+                  className={`admin-tab-btn ${adminActiveTab === "gestionar" ? "active" : ""}`}
+                  onClick={() => setAdminActiveTab("gestionar")}
+                >
+                  Gestionar locales
+                </button>
+                <button
+                  type="button"
                   className={`admin-tab-btn ${adminActiveTab === "pendientes" ? "active" : ""}`}
                   onClick={() => setAdminActiveTab("pendientes")}
                 >
@@ -2156,6 +2206,10 @@ export default function App() {
                 <div className="form-error-box" style={{ marginBottom: "1rem" }}>
                   {adminAuthError}
                 </div>
+              )}
+
+              {adminActiveTab === "gestionar" && (
+                <GestionarLocales categorias={CAT_ORDER} onChanged={handleLocalPublicadoChanged} />
               )}
 
               {/* TAB 1: POSTULACIONES PENDIENTES */}
@@ -2198,7 +2252,7 @@ export default function App() {
                           </p>
                           {p.descripcion && (
                             <p style={{ margin: "0.4rem 0", fontSize: "0.85rem", fontStyle: "italic", color: "var(--muted)" }}>
-                              "{p.descripcion}"
+                              <strong>"{p.descripcion}"</strong>
                             </p>
                           )}
 
@@ -2237,8 +2291,10 @@ export default function App() {
                               </div>
                             )}
 
-                            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.4rem" }}>
+                            <div className="admin-coord-fields">
+                              <label className="admin-coord-label" htmlFor={`admin-lat-${p.id}`}>Latitud</label>
                               <input
+                                id={`admin-lat-${p.id}`}
                                 type="number"
                                 step="any"
                                 placeholder="Latitud"
@@ -2254,7 +2310,9 @@ export default function App() {
                                 }
                                 className="admin-coord-input"
                               />
+                              <label className="admin-coord-label" htmlFor={`admin-lng-${p.id}`}>Longitud</label>
                               <input
+                                id={`admin-lng-${p.id}`}
                                 type="number"
                                 step="any"
                                 placeholder="Longitud"
@@ -2364,7 +2422,7 @@ export default function App() {
               {adminActiveTab === "historial" && (
                 <div>
                   <h3 style={{ margin: "0 0 1rem", fontSize: "1rem" }}>
-                    Trazabilidad de Moderación (Tabla verificar_locales)
+                    Historial de moderación
                   </h3>
                   {historialAuditoria.length === 0 ? (
                     <div className="admin-empty-box">
@@ -2375,14 +2433,14 @@ export default function App() {
                       {historialAuditoria.map((h) => (
                         <div key={h.id} className="admin-item-card" style={{ padding: "0.75rem 1rem" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
-                            <strong>Local ID #{h.local_id}</strong>
+                            <strong>{h.local?.nombre || `Local ID #${h.local_id}`}</strong>
                             <span className={`tag ${h.estado_nuevo === "verificado" ? "o" : "c"}`}>
                               {h.estado_anterior} → {h.estado_nuevo}
                             </span>
                           </div>
                           <div style={{ fontSize: "0.78rem", color: "var(--muted)", marginTop: "0.3rem" }}>
-                            Moderador: {h.admin_nombre} ·{" "}
-                            {h.fecha ? new Date(h.fecha).toLocaleString("es-CL") : ""}
+                            {h.admin_nombre ? `Moderador: ${h.admin_nombre} · ` : ""}
+                            {h.fecha ? new Date(h.fecha).toLocaleString("es-CL") : "Retiro anterior sin fecha registrada"}
                           </div>
                         </div>
                       ))}
@@ -2596,11 +2654,11 @@ export default function App() {
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label>
+                    <div className="form-group" role="group" aria-labelledby={`sug-tipo-titulo-${idx}`}>
+                      <span id={`sug-tipo-titulo-${idx}`} className="form-group-title">
                         {idx === 0 ? "Tipo de local" : `Tipo de local ${idx + 1}`}{" "}
                         <span className="req">*</span>
-                      </label>
+                      </span>
                       <div className="suggest-chips-grid">
                         {[...CAT_ORDER, "No estoy seguro"].map((c) => {
                           const isCatActive = item.tipo === c;

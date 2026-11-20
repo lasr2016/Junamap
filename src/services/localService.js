@@ -57,7 +57,7 @@ export async function getLocalesWithStatus() {
         .eq("activo", true)
         .order("id", { ascending: true });
 
-      if (res.data && res.data.length > 0) {
+      if (!res.error && res.data) {
         const verificados = res.data.filter(
           (l) => l.verificado === true || l.estado === "verificado"
         );
@@ -75,7 +75,7 @@ export async function getLocalesWithStatus() {
     }
 
     if (!data || data.length === 0) {
-      return { data: fallbackLocales, isFallback: false };
+      return { data: [], isFallback: false };
     }
 
     // Adaptador de tipos numéricos para prevenir NaN en Haversine (Plan de Regresión / DEF-01)
@@ -94,6 +94,60 @@ export async function getLocalesWithStatus() {
     console.warn("Excepción al conectar con Supabase. Usando fallback (FL-05):", err);
     return { data: fallbackLocales, isFallback: true };
   }
+}
+
+export async function getLocalesPublicados() {
+  const { data, error } = await supabase
+    .from("vista_locales_mapa")
+    .select("*")
+    .order("id");
+  if (error) throw error;
+  return data.filter((local) => !["prueba local", "asdsa"].includes(
+    String(local.nombre || "").toLowerCase().trim()
+  ));
+}
+
+export async function actualizarLocalPublicado(id, form) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || user?.email?.toLowerCase() !== ADMIN_OFFICIAL_EMAIL) {
+    throw new Error("Inicia sesión con la cuenta de moderación de Supabase.");
+  }
+
+  let changes = { activo: false };
+  if (form) {
+    const nombre = sanitizeInput(form.nombre);
+    const direccion = sanitizeInput(form.direccion);
+    const lat = Number(form.lat);
+    const lng = Number(form.lng);
+    if (nombre.length < 3 || direccion.length < 4) {
+      throw new Error("Ingresa un nombre y una dirección válidos.");
+    }
+    if (form.lat === "" || form.lng === "" || !Number.isFinite(lat) ||
+        !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      throw new Error("Ingresa coordenadas válidas.");
+    }
+    changes = {
+      nombre, direccion, lat, lng, latitud: lat, longitud: lng,
+      tipo: form.tipo,
+      categoria_id: CATEGORIA_MAP[form.tipo],
+      abre: form.abre || null,
+      cierra: form.cierra || null,
+      telefono: sanitizeInput(form.telefono) || null,
+      descripcion: sanitizeInput(form.descripcion) || null,
+      metodo_cobro: sanitizeInput(form.metodo_cobro) || null
+    };
+  }
+
+  const { data, error } = await supabase.from("locales")
+    .update(changes)
+    .eq("id", id)
+    .eq("activo", true)
+    .or("verificado.eq.true,estado.eq.verificado")
+    .select("id")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("El local ya no está publicado o no tienes permiso para modificarlo.");
+  return form ? changes : null;
 }
 
 /**
@@ -249,8 +303,8 @@ export async function getHistorialModeracion() {
 
   const { data, error } = await supabase
     .from("verificar_locales")
-    .select("*")
-    .order("fecha", { ascending: false })
+    .select("*, local:locales(nombre)")
+    .order("fecha", { ascending: false, nullsFirst: false })
     .limit(20);
 
   if (error) {
@@ -306,10 +360,7 @@ export async function getReportesLocales() {
     .select("*")
     .order("creado_en", { ascending: false });
 
-  if (error) {
-    console.warn("Error al cargar reportes_locales:", error.message);
-    return [];
-  }
+  if (error) throw error;
   return data || [];
 }
 
@@ -324,11 +375,14 @@ export async function resolverReporteLocal(id, nuevoEstado = "revisado") {
   const { data, error } = await supabase
     .from("reportes_locales")
     .update({ estado: nuevoEstado })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw error;
   }
+  if (!data) throw new Error("No se pudo actualizar el reporte con esta sesión.");
   return data;
 }
 
@@ -351,53 +405,26 @@ export async function limpiarLocalesPrueba() {
 export const ADMIN_OFFICIAL_EMAIL = "webjunamap@gmail.com";
 
 /**
- * Autenticación de Administrador con Supabase Auth + respaldo de clave maestra de desarrollo
+ * Autenticación del moderador con Supabase Auth
  */
 export async function loginAdmin(email, password) {
   const cleanEmail = String(email || "").trim().toLowerCase();
-  const cleanPass = String(password || "").trim();
+  const suppliedPassword = String(password || "");
 
   if (cleanEmail !== ADMIN_OFFICIAL_EMAIL) {
     throw new Error(`El acceso administrativo está restringido exclusivamente al correo oficial (${ADMIN_OFFICIAL_EMAIL}).`);
   }
 
-  // Intentar primero con Supabase Auth real
-  if (supabaseUrl && supabaseAnonKey) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password: cleanPass
-    });
-
-    if (!error && data?.user) {
-      return {
-        user: data.user,
-        email: data.user.email,
-        mode: "supabase_auth"
-      };
-    }
-
-    // Si falla Supabase Auth pero coincide con credenciales locales de demostración/defensa
-    if (cleanPass === "admin123" || cleanPass === "junamap2026") {
-      return {
-        user: { email: ADMIN_OFFICIAL_EMAIL },
-        email: ADMIN_OFFICIAL_EMAIL,
-        mode: "fallback_key"
-      };
-    }
-
-    throw new Error(error?.message || "Credenciales de administrador inválidas.");
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: cleanEmail,
+    password: suppliedPassword
+  });
+  if (error?.code === "invalid_credentials") {
+    throw new Error("Correo o contraseña incorrectos. Puedes usar «¿Olvidaste tu contraseña?» para recuperar el acceso.");
   }
-
-  // Respaldo si ingresa clave de defensa
-  if (cleanPass === "admin123" || cleanPass === "junamap2026") {
-    return {
-      user: { email: ADMIN_OFFICIAL_EMAIL },
-      email: ADMIN_OFFICIAL_EMAIL,
-      mode: "fallback_key"
-    };
-  }
-
-  throw new Error("Correo o contraseña de administrador incorrectos.");
+  if (error) throw error;
+  if (!data.session) throw new Error("Supabase no devolvió una sesión de moderación.");
+  return data.user;
 }
 
 /**
