@@ -1,96 +1,12 @@
+## Avances de esta rama
 
-# JunaMap
+Esta rama agrega **Gestionar locales** al Panel de Moderación. Permite buscar,
+editar y retirar del mapa los locales publicados. Cada retiro queda registrado
+en Auditoría.
 
-Aplicación web responsiva diseñada bajo el enfoque *mobile-first*, que permite a los estudiantes geolocalizar de manera rápida, confiable y verificada los comercios que aceptan la tarjeta BAES (Junaeb).
+También se corrigieron el acceso de moderación y los permisos de reportes en
+Supabase, y se mejoraron el panel inferior, los favoritos y la accesibilidad
+de los formularios.
 
----
-## Requisitos Previos e Instalaciones
-
-### Requisitos Previos (Docker)
-
-- **Docker Desktop** (o Docker Engine + Docker Compose) instalado y corriendo en tu computadora.
-- **Ejecutar Docker Desktop** (dejarlo abierto)
-
-### Requisitos Previos (Node.js)
-
-- **Node.js**: Versión v20.0.0 o superior (Recomendado: v24.x LTS o superior).
-- **Git**
-
-### Instalar dependencias (en caso de no usar Docker)
-
-```bash
-npm install
-```
-
----
-## Opciones de Ejecución
-
-### Opción 1: Docker
-
-Esta opción permite levantar el proyecto en cualquier computadora que tenga Docker instalado, **sin necesidad de instalar Node.js ni dependencias locales**.
-
-1. **Clonar el repositorio:** (Recomendado clonar en vez que bajar el ZIP, con clone queda conectado de inmediato al repo)
-```bash
-git clone https://github.com/lasr2016/Junamap.git
-cd Junamap
-```
-	
-2. **Levantar el contenedor con Docker Compose**:
-```bash
-docker compose up -d --build
-```
-	
-3. **Abrir en el navegador:** Ingresa a: [http://localhost:8080](http://localhost:8080)
-	
-4. **Para detener la aplicación**: 
-```bash
-docker compose down
-```
-
-
-### Opción 2: Node.js
-
-Si deseas modificar código en tiempo real con recarga automática:
-
-1. **Clonar, acceder e instalar dependencias:**
-```bash
-git clone https://github.com/lasr2016/Junamap.git
-cd Junamap
-npm install
-```
-	
-
-3. **Levantar el servidor de desarrollo:**
-```bash
-npm run dev
-```
-   - Abre en tu navegador la dirección indicada en la consola: [http://localhost:5173/](http://localhost:5173/)
-
-
----
-
-## ¿Cómo probarlo en tu Celular (Red Local)?
-
-Dado que JunaMap está pensado para usarse en terreno y requiere geolocalización (la cual exige HTTPS en dispositivos externos):
-
-- Asegúrate de que tu computadora y tu celular estén conectados a la **misma red Wi-Fi**.
-    
-- Levanta el servidor exponiéndolo a la red local:
-```bash
-npm run dev -- --host
-```
-    
-- La consola te mostrará una dirección bajo la etiqueta **Network** (ejemplo: `https://192.168.1.35:5173`).
-    
-- Abre esa dirección en el navegador web de tu celular.
-    
-- Si aparece la advertencia _"La conexión no es privada"_ (debido al certificado autofirmado para SSL local), pulsa en **Configuración avanzada** y selecciona **Acceder a la dirección (no seguro)** para permitir el uso del GPS.
-
-### 🔑 Variables de Entorno y Seguridad
-Para ejecutar la aplicación localmente o en entornos de evaluación:
-1. Copie el archivo `.env.example` a `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-> **Nota de Seguridad y Buenas Prácticas:**  
-> Las credenciales provistas corresponden a la `anon-key` pública de Supabase, requerida por el cliente frontend. La seguridad del sistema **no depende de ocultar esta clave pública**, sino del esquema de **Row Level Security (RLS)** implementado en PostgreSQL (ver script `sql/esquema_incremento_2.sql`), el cual impide modificaciones o accesos no autorizados a nivel de base de datos.
+Consulta el [detalle de los cambios](docs/avances20-11.md) y los
+[scripts SQL de Supabase](sql/).
