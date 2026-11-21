@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import fallbackLocales from "../data/locales.json";
+import { sanitizeInput } from "../utils/sanitizeInput";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -12,16 +13,6 @@ const CATEGORIA_MAP = {
   Minimarket: 3,
   Panadería: 4
 };
-
-/**
- * Sanitiza texto eliminando etiquetas HTML o scripts (QA-08 / Sección 14)
- */
-export function sanitizeInput(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/<[^>]*>?/gm, "")
-    .trim();
-}
 
 /**
  * PBI-06 / AC-10: Obtener locales verificados y activos desde Supabase

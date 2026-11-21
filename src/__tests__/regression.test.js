@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeInput } from "../services/localService";
+import { sanitizeInput } from "../utils/sanitizeInput";
 
 // Función Haversine idéntica a la usada en App.jsx
 function calcDist(lat1, lon1, lat2, lon2) {
